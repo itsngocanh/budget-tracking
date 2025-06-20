@@ -38,7 +38,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-@st.cache_data
+# Initialize session state for data
+if 'data' not in st.session_state:
+    st.session_state.data = pd.DataFrame()
+    
+    
+
 def load_data():
     """
     Load and preprocess the data from '03.my_data.csv'.
@@ -46,6 +51,11 @@ def load_data():
     """
     try:
         df = pd.read_csv('03.my_data.csv')
+        
+        return df
+    except Exception as e:
+        st.error(f"Error loading CSV: {str(e)}")
+        return pd.DataFrame()
         
         # Define the required column names as they appear in the CSV (case-sensitive initially)
         required_columns_csv_case = ['Type', 'Amount', 'Subtype', 'Description', 'Timestamp'] 
@@ -139,6 +149,28 @@ def create_sample_data():
             })
     
     return pd.DataFrame(data)
+    
+    # Main app function
+def main():
+    st.title("Data Overview Dashboard")
+    
+    # Reload button and status message
+    col1, col2 = st.columns([0.2, 0.8])
+    with col1:
+        if st.button("🔄 Reload Data", key="reload_btn"):
+            st.session_state.data = load_data()
+            st.success("CSV data reloaded!")
+    
+    # Load initial data if empty
+    if st.session_state.data.empty:
+        st.session_state.data = load_data()
+    
+    # Display data
+    if not st.session_state.data.empty:
+        st.subheader("Current Data")
+        st.dataframe(st.session_state.data)
+    else:
+        st.warning("No data available. Please check your CSV file.")
 
 def format_vnd(amount):
     """
