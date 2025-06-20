@@ -1,4 +1,4 @@
-﻿Type,Amount,Subtype,Description,Timestamp
+Type,Amount,Subtype,Description,Timestamp
 Saving,8000000.0,Quỹ Thảo Mộc,bố mẹ cho Thảo Mộc,2025-05-02T21:29:52.259627
 Saving,7000000.0,Quỹ Thượng Hải,đóng quỹ,2025-05-02T21:29:52.259627
 Saving,41000000.0,Monthly Savings,tiết kiệm hàng tháng,2025-05-02T21:29:52.259627
@@ -44,3 +44,4 @@ Outcome,100000.0,Ăn vặt,trà sữa,2025-06-16T22:34:47.352481
 Outcome,363690.0,Đi chợ,Đồ ăn hàng ngày,2025-06-17T23:46:27.296112
 Outcome,83000.0,Ăn vặt,trà sữa,2025-06-17T23:47:06.095954
 Outcome,291000.0,Ăn uống,bữa trưa,2025-06-19T10:34:14.294718
+Outcome,140000.0,Ăn uống,bữa tối,2025-06-20T20:16:03.229646
