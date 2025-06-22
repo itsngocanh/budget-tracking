@@ -1,50 +1,49 @@
 Type,Amount,Subtype,Description,Timestamp
-saving,8000000.0,Quỹ Thảo Mộc,bố mẹ cho Thảo Mộc,2025-05-02T21:29:52.259627
-saving,7000000.0,Quỹ Thượng Hải,đóng quỹ,2025-05-02T21:29:52.259627
-saving,41000000.0,Monthly Savings,tiết kiệm hàng tháng,2025-05-02T21:29:52.259627
-income,55474933.0,Số dư ban đầu,Số dư ban đầu,2025-05-10T10:30:18.056839
-income,10000000.0,Chồng,Chi phí hàng tháng,2025-06-02T15:52:56.893968
-outcome,-100000.0,Thảo Mộc,thuốc,2025-06-02T15:53:43.761012
-outcome,-1500000.0,Thảo Mộc,dì Mai,2025-06-02T18:16:47.025713
-saving,1000000.0,Quỹ Thảo Mộc,bố cho Thảo Mộc,2025-06-02T21:29:52.259627
-outcome,-285000.0,Đi chợ,đồ ăn hàng ngày,2025-06-03T20:02:27.052657
-outcome,-60000.0,Ăn vặt,trà sữa,2025-06-03T20:19:48.979484
-outcome,-440000.0,Đồ dùng gia đình,bếp,2025-06-04T22:40:49.341497
-outcome,-302000.0,Đi chợ,đồ ăn hàng ngày,2025-06-05T09:44:31.867702
-outcome,-114940.0,Ăn vặt,trà sữa,2025-06-05T10:01:47.439550
-income,200000.0,Thảo Mộc,tiền bà Minh cho con,2025-06-05T22:47:40.038964
-outcome,-55000.0,Di chuyển,Taxi từ bà ngoại về nhà,2025-06-05T22:48:04.185119
-outcome,-202000.0,Chăm sóc bản thân,Skincare,2025-06-05T23:22:39.522232
-outcome,-50000.0,Ăn vặt,chè,2025-06-06T20:25:06.044397
-outcome,-1410200.0,Thảo Mộc,sữa,2025-06-06T23:01:41.294347
-outcome,-80000.0,Di chuyển,taxi đến viện,2025-06-07T11:35:46.125822
-outcome,-609000.0,Thảo Mộc,khám lại nhiễm khuẩn tiết niệu,2025-06-07T11:36:13.882775
-outcome,-3135000.0,Thảo Mộc,tiêm vacxin,2025-06-07T11:41:37.493365
-outcome,-159500.0,Ăn uống,bữa trưa,2025-06-07T12:33:30.346888
-outcome,-378000.0,Thảo Mộc,thuốc,2025-06-07T18:59:16.667953
-outcome,-95000.0,Ăn uống,bữa tối,2025-06-07T20:54:26.352297
-outcome,-240240.0,Thảo Mộc,bỉm,2025-06-07T22:43:12.846477
-outcome,-218608.0,Đồ dùng gia đình,bếp,2025-06-08T09:27:42.070229
-outcome,-305000.0,Đi chợ,đồ ăn hàng ngày,2025-06-08T09:43:48.065605
-outcome,-26000.0,Đi chợ,đồ ăn hàng ngày,2025-06-09T17:07:02.731661
-outcome,-92000.0,Ăn uống,bữa tối,2025-06-09T19:17:20.061301
-income,225000.0,Lương,lương nghỉ sinh tháng 5,2025-06-10T10:30:18.056839
-outcome,-85000.0,Ăn vặt,trà sữa,2025-06-10T12:35:44.378250
-outcome,-333840.0,Đi chợ,đồ ăn hàng ngày,2025-06-10T13:10:18.955962
-outcome,-266600.0,Đi chợ,đồ ăn hàng ngày,2025-06-12T12:37:20.353209
-outcome,-254380.0,Đồ dùng gia đình,bếp,2025-06-12T17:52:27.638401
-outcome,-100000.0,Ăn uống,bữa trưa,2025-06-13T12:17:40.876988
-outcome,-85000.0,Ăn vặt,trà sữa,2025-06-13T13:08:57.707556
-outcome,-90000.0,Thảo Mộc,thuốc,2025-06-13T22:03:02.779813
-outcome,-308000.0,Chăm sóc bản thân,quần áo,2025-06-13T23:08:01.038514
-outcome,-85000.0,Ăn vặt,trà sữa,2025-06-14T23:27:23.832137
-outcome,-27000.0,Ăn vặt,bimbim,2025-06-14T23:27:58.732651
-outcome,-278100.0,Thảo Mộc,Đồ chơi,2025-06-16T22:34:28.611178
-outcome,-100000.0,Ăn vặt,trà sữa,2025-06-16T22:34:47.352481
-outcome,-363690.0,Đi chợ,Đồ ăn hàng ngày,2025-06-17T23:46:27.296112
-outcome,-83000.0,Ăn vặt,trà sữa,2025-06-17T23:47:06.095954
-outcome,-291000.0,Ăn uống,bữa trưa,2025-06-19T10:34:14.294718
-outcome,-140000.0,Ăn uống,bữa tối,2025-06-20T20:16:03.229646
-outcome,-110000.0,Ăn uống,bữa trưa,2025-06-21T13:50:24.567841
-outcome,-242600.0,Đi chợ,Đồ ăn hàng ngày,2025-06-21T23:48:59.162156
-outcome,-500000.0,Sinh nhật,chị Hương,2025-06-22T10:41:21.669114
+Saving,8000000.0,Quỹ Thảo Mộc,bố mẹ cho Thảo Mộc,2025-05-02T21:29:52.259627
+Saving,7000000.0,Quỹ Thượng Hải,đóng quỹ,2025-05-02T21:29:52.259627
+Saving,41000000.0,Monthly Savings,tiết kiệm hàng tháng,2025-05-02T21:29:52.259627
+Income,55474933.0,Số dư ban đầu,Số dư ban đầu,2025-05-10T10:30:18.056839
+Income,10000000.0,Chồng,Chi phí hàng tháng,2025-06-02T15:52:56.893968
+Outcome,100000.0,Thảo Mộc,thuốc,2025-06-02T15:53:43.761012
+Outcome,1500000.0,Thảo Mộc,dì Mai,2025-06-02T18:16:47.025713
+Saving,1000000.0,Quỹ Thảo Mộc,bố cho Thảo Mộc,2025-06-02T21:29:52.259627
+Outcome,285000.0,Đi chợ,đồ ăn hàng ngày,2025-06-03T20:02:27.052657
+Outcome,60000.0,Ăn vặt,trà sữa,2025-06-03T20:19:48.979484
+Outcome,440000.0,Đồ dùng gia đình,bếp,2025-06-04T22:40:49.341497
+Outcome,302000.0,Đi chợ,đồ ăn hàng ngày,2025-06-05T09:44:31.867702
+Outcome,114940.0,Ăn vặt,trà sữa,2025-06-05T10:01:47.439550
+Income,200000.0,Thảo Mộc,tiền bà Minh cho con,2025-06-05T22:47:40.038964
+Outcome,55000.0,Di chuyển,Taxi từ bà ngoại về nhà,2025-06-05T22:48:04.185119
+Outcome,202000.0,Chăm sóc bản thân,Skincare,2025-06-05T23:22:39.522232
+Outcome,50000.0,Ăn vặt,chè,2025-06-06T20:25:06.044397
+Outcome,1410200.0,Thảo Mộc,sữa,2025-06-06T23:01:41.294347
+Outcome,80000.0,Di chuyển,taxi đến viện,2025-06-07T11:35:46.125822
+Outcome,609000.0,Thảo Mộc,khám lại nhiễm khuẩn tiết niệu,2025-06-07T11:36:13.882775
+Outcome,3135000.0,Thảo Mộc,tiêm vacxin,2025-06-07T11:41:37.493365
+Outcome,159500.0,Ăn uống,bữa trưa,2025-06-07T12:33:30.346888
+Outcome,378000.0,Thảo Mộc,thuốc,2025-06-07T18:59:16.667953
+Outcome,95000.0,Ăn uống,bữa tối,2025-06-07T20:54:26.352297
+Outcome,240240.0,Thảo Mộc,bỉm,2025-06-07T22:43:12.846477
+Outcome,218608.0,Đồ dùng gia đình,bếp,2025-06-08T09:27:42.070229
+Outcome,305000.0,Đi chợ,đồ ăn hàng ngày,2025-06-08T09:43:48.065605
+Outcome,26000.0,Đi chợ,đồ ăn hàng ngày,2025-06-09T17:07:02.731661
+Outcome,92000.0,Ăn uống,bữa tối,2025-06-09T19:17:20.061301
+Income,225000.0,Lương,lương nghỉ sinh tháng 5,2025-06-10T10:30:18.056839
+Outcome,85000.0,Ăn vặt,trà sữa,2025-06-10T12:35:44.378250
+Outcome,333840.0,Đi chợ,đồ ăn hàng ngày,2025-06-10T13:10:18.955962
+Outcome,266600.0,Đi chợ,đồ ăn hàng ngày,2025-06-12T12:37:20.353209
+Outcome,254380.0,Đồ dùng gia đình,bếp,2025-06-12T17:52:27.638401
+Outcome,100000.0,Ăn uống,bữa trưa,2025-06-13T12:17:40.876988
+Outcome,85000.0,Ăn vặt,trà sữa,2025-06-13T13:08:57.707556
+Outcome,90000.0,Thảo Mộc,thuốc,2025-06-13T22:03:02.779813
+Outcome,308000.0,Chăm sóc bản thân,quần áo,2025-06-13T23:08:01.038514
+Outcome,85000.0,Ăn vặt,trà sữa,2025-06-14T23:27:23.832137
+Outcome,27000.0,Ăn vặt,bimbim,2025-06-14T23:27:58.732651
+Outcome,278100.0,Thảo Mộc,Đồ chơi,2025-06-16T22:34:28.611178
+Outcome,100000.0,Ăn vặt,trà sữa,2025-06-16T22:34:47.352481
+Outcome,363690.0,Đi chợ,Đồ ăn hàng ngày,2025-06-17T23:46:27.296112
+Outcome,83000.0,Ăn vặt,trà sữa,2025-06-17T23:47:06.095954
+Outcome,291000.0,Ăn uống,bữa trưa,2025-06-19T10:34:14.294718
+Outcome,140000.0,Ăn uống,bữa tối,2025-06-20T20:16:03.229646
+Outcome,110000.0,Ăn uống,bữa trưa,2025-06-21T13:50:24.567841
+Outcome,242600.0,Đi chợ,Đồ ăn hàng ngày,2025-06-21T23:48:59.162156
