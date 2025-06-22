@@ -1,0 +1,306 @@
+{
+    "income": [
+        {
+            "amount": 10000000.0,
+            "subtype": "Chồng",
+            "description": "Chi phí hàng tháng",
+            "timestamp": "2025-06-02T15:52:56.893968"
+        },
+        {
+            "amount": 200000.0,
+            "subtype": "Thảo Mộc",
+            "description": "tiền bà Minh cho con",
+            "timestamp": "2025-06-05T22:47:40.038964"
+        },
+        {
+            "amount": 225000.0,
+            "subtype": "Lương",
+            "description": "lương nghỉ sinh tháng 5",
+            "timestamp": "2025-06-10T10:30:18.056839"
+        },
+        {
+            "amount": 55474933.0,
+            "subtype": "Số dư ban đầu",
+            "description": "Số dư ban đầu",
+            "timestamp": "2025-05-10T10:30:18.056839"
+        }
+    ],
+    "outcome": [
+        {
+            "amount": 100000.0,
+            "subtype": "Thảo Mộc",
+            "description": "thuốc",
+            "timestamp": "2025-06-02T15:53:43.761012"
+        },
+        {
+            "amount": 1500000.0,
+            "subtype": "Thảo Mộc",
+            "description": "dì Mai",
+            "timestamp": "2025-06-02T18:16:47.025713"
+        },
+        {
+            "amount": 285000.0,
+            "subtype": "Đi chợ",
+            "description": "đồ ăn hàng ngày",
+            "timestamp": "2025-06-03T20:02:27.052657"
+        },
+        {
+            "amount": 60000.0,
+            "subtype": "Ăn vặt",
+            "description": "trà sữa",
+            "timestamp": "2025-06-03T20:19:48.979484"
+        },
+        {
+            "amount": 440000.0,
+            "subtype": "Đồ dùng gia đình",
+            "description": "bếp",
+            "timestamp": "2025-06-04T22:40:49.341497"
+        },
+        {
+            "amount": 302000.0,
+            "subtype": "Đi chợ",
+            "description": "đồ ăn hàng ngày",
+            "timestamp": "2025-06-05T09:44:31.867702"
+        },
+        {
+            "amount": 114940.0,
+            "subtype": "Ăn vặt",
+            "description": "trà sữa",
+            "timestamp": "2025-06-05T10:01:47.439550"
+        },
+        {
+            "amount": 55000.0,
+            "subtype": "Di chuyển",
+            "description": "Taxi từ bà ngoại về nhà",
+            "timestamp": "2025-06-05T22:48:04.185119"
+        },
+        {
+            "amount": 202000.0,
+            "subtype": "Chăm sóc bản thân",
+            "description": "Skincare",
+            "timestamp": "2025-06-05T23:22:39.522232"
+        },
+        {
+            "amount": 50000.0,
+            "subtype": "Ăn vặt",
+            "description": "chè",
+            "timestamp": "2025-06-06T20:25:06.044397"
+        },
+        {
+            "amount": 1410200.0,
+            "subtype": "Thảo Mộc",
+            "description": "sữa",
+            "timestamp": "2025-06-06T23:01:41.294347"
+        },
+        {
+            "amount": 80000.0,
+            "subtype": "Di chuyển",
+            "description": "taxi đến viện",
+            "timestamp": "2025-06-07T11:35:46.125822"
+        },
+        {
+            "amount": 609000.0,
+            "subtype": "Thảo Mộc",
+            "description": "khám lại nhiễm khuẩn tiết niệu",
+            "timestamp": "2025-06-07T11:36:13.882775"
+        },
+        {
+            "amount": 3135000.0,
+            "subtype": "Thảo Mộc",
+            "description": "tiêm vacxin",
+            "timestamp": "2025-06-07T11:41:37.493365"
+        },
+        {
+            "amount": 159500.0,
+            "subtype": "Ăn uống",
+            "description": "bữa trưa",
+            "timestamp": "2025-06-07T12:33:30.346888"
+        },
+        {
+            "amount": 378000.0,
+            "subtype": "Thảo Mộc",
+            "description": "thuốc",
+            "timestamp": "2025-06-07T18:59:16.667953"
+        },
+        {
+            "amount": 95000.0,
+            "subtype": "Ăn uống",
+            "description": "bữa tối",
+            "timestamp": "2025-06-07T20:54:26.352297"
+        },
+        {
+            "amount": 240240.0,
+            "subtype": "Thảo Mộc",
+            "description": "bỉm",
+            "timestamp": "2025-06-07T22:43:12.846477"
+        },
+        {
+            "amount": 218608.0,
+            "subtype": "Đồ dùng gia đình",
+            "description": "bếp",
+            "timestamp": "2025-06-08T09:27:42.070229"
+        },
+        {
+            "amount": 305000.0,
+            "subtype": "Đi chợ",
+            "description": "đồ ăn hàng ngày",
+            "timestamp": "2025-06-08T09:43:48.065605"
+        },
+        {
+            "amount": 26000.0,
+            "subtype": "Đi chợ",
+            "description": "đồ ăn hàng ngày",
+            "timestamp": "2025-06-09T17:07:02.731661"
+        },
+        {
+            "amount": 92000.0,
+            "subtype": "Ăn uống",
+            "description": "bữa tối",
+            "timestamp": "2025-06-09T19:17:20.061301"
+        },
+        {
+            "amount": 85000.0,
+            "subtype": "Ăn vặt",
+            "description": "trà sữa",
+            "timestamp": "2025-06-10T12:35:44.378250"
+        },
+        {
+            "amount": 333840.0,
+            "subtype": "Đi chợ",
+            "description": "đồ ăn hàng ngày",
+            "timestamp": "2025-06-10T13:10:18.955962"
+        },
+        {
+            "amount": 266600.0,
+            "subtype": "Đi chợ",
+            "description": "đồ ăn hàng ngày",
+            "timestamp": "2025-06-12T12:37:20.353209"
+        },
+        {
+            "amount": 254380.0,
+            "subtype": "Đồ dùng gia đình",
+            "description": "bếp",
+            "timestamp": "2025-06-12T17:52:27.638401"
+        },
+        {
+            "amount": 100000.0,
+            "subtype": "Ăn uống",
+            "description": "bữa trưa",
+            "timestamp": "2025-06-13T12:17:40.876988"
+        },
+        {
+            "amount": 85000.0,
+            "subtype": "Ăn vặt",
+            "description": "trà sữa",
+            "timestamp": "2025-06-13T13:08:57.707556"
+        },
+        {
+            "amount": 90000.0,
+            "subtype": "Thảo Mộc",
+            "description": "thuốc",
+            "timestamp": "2025-06-13T22:03:02.779813"
+        },
+        {
+            "amount": 308000.0,
+            "subtype": "Chăm sóc bản thân",
+            "description": "quần áo",
+            "timestamp": "2025-06-13T23:08:01.038514"
+        },
+        {
+            "amount": 85000.0,
+            "subtype": "Ăn vặt",
+            "description": "trà sữa",
+            "timestamp": "2025-06-14T23:27:23.832137"
+        },
+        {
+            "amount": 27000.0,
+            "subtype": "Ăn vặt",
+            "description": "bimbim",
+            "timestamp": "2025-06-14T23:27:58.732651"
+        },
+        {
+            "amount": 278100.0,
+            "subtype": "Thảo Mộc",
+            "description": "Đồ chơi",
+            "timestamp": "2025-06-16T22:34:28.611178"
+        },
+        {
+            "amount": 100000.0,
+            "subtype": "Ăn vặt",
+            "description": "trà sữa",
+            "timestamp": "2025-06-16T22:34:47.352481"
+        },
+        {
+            "amount": 363690.0,
+            "subtype": "Đi chợ",
+            "description": "Đồ ăn hàng ngày",
+            "timestamp": "2025-06-17T23:46:27.296112"
+        },
+        {
+            "amount": 83000.0,
+            "subtype": "Ăn vặt",
+            "description": "trà sữa",
+            "timestamp": "2025-06-17T23:47:06.095954"
+        },
+        {
+            "amount": 291000.0,
+            "subtype": "Ăn uống",
+            "description": "bữa trưa",
+            "timestamp": "2025-06-19T10:34:14.294718"
+        },
+        {
+            "amount": 140000.0,
+            "subtype": "Ăn uống",
+            "description": "bữa tối",
+            "timestamp": "2025-06-20T20:16:03.229646"
+        },
+        {
+            "amount": 110000.0,
+            "subtype": "Ăn uống",
+            "description": "bữa trưa",
+            "timestamp": "2025-06-21T13:50:24.567841"
+        },
+        {
+            "amount": 242600.0,
+            "subtype": "Đi chợ",
+            "description": "Đồ ăn hàng ngày",
+            "timestamp": "2025-06-21T23:48:59.162156"
+        },
+        {
+            "amount": 500000.0,
+            "subtype": "Sinh nhật",
+            "description": "chị Hương",
+            "timestamp": "2025-06-22T10:41:21.669114"
+        }
+    ],
+    "savings": [
+        {
+            "amount": 1000000.0,
+            "subtype": "Quỹ Thảo Mộc",
+            "description": "bố cho Thảo Mộc",
+            "timestamp": "2025-06-02T21:29:52.259627"
+        },
+        {
+            "amount": 8000000.0,
+            "subtype": "Quỹ Thảo Mộc",
+            "description": "bố mẹ cho Thảo Mộc",
+            "timestamp": "2025-05-02T21:29:52.259627"
+        },
+        {
+            "amount": 7000000.0,
+            "subtype": "Quỹ Thượng Hải",
+            "description": "đóng quỹ",
+            "timestamp": "2025-05-02T21:29:52.259627"
+        },
+        {
+            "amount": 41000000.0,
+            "subtype": "Monthly Savings",
+            "description": "tiết kiệm hàng tháng",
+            "timestamp": "2025-05-02T21:29:52.259627"
+        }
+    ],
+    "current_balance": 52399265.0,
+    "initial_income_total": 0.0,
+    "initial_outcome_total": 0.0,
+    "initial_savings_total": 56000000.0
+}
