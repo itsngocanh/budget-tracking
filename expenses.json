@@ -277,6 +277,12 @@
             "subtype": "Chăm sóc bản thân",
             "description": "makeup",
             "timestamp": "2025-06-23T21:05:09.176303"
+        },
+        {
+            "amount": 1760264.0,
+            "subtype": "Fe Credit",
+            "description": "nợ",
+            "timestamp": "2025-06-25T08:45:38.164507"
         }
     ],
     "savings": [
@@ -305,7 +311,7 @@
             "timestamp": "2025-05-02T21:29:52.259627"
         }
     ],
-    "current_balance": 51819265.0,
+    "current_balance": 50059001.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
