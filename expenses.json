@@ -319,6 +319,12 @@
             "subtype": "Chăm sóc bản thân",
             "description": "makeup",
             "timestamp": "2025-06-26T12:13:56.275691"
+        },
+        {
+            "amount": 100000.0,
+            "subtype": "Chăm sóc bản thân",
+            "description": "makeup",
+            "timestamp": "2025-06-26T17:40:16.754800"
         }
     ],
     "savings": [
@@ -347,7 +353,7 @@
             "timestamp": "2025-05-02T21:29:52.259627"
         }
     ],
-    "current_balance": 61520001.0,
+    "current_balance": 61420001.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
