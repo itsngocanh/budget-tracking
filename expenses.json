@@ -331,6 +331,12 @@
             "subtype": "Chi phí cố định",
             "description": "nạp đt",
             "timestamp": "2025-06-26T19:15:53.372930"
+        },
+        {
+            "amount": 5825000.0,
+            "subtype": "Đầu tư",
+            "description": "vàng",
+            "timestamp": "2025-06-27T12:34:22.771570"
         }
     ],
     "savings": [
@@ -359,7 +365,7 @@
             "timestamp": "2025-05-02T21:29:52.259627"
         }
     ],
-    "current_balance": 61390001.0,
+    "current_balance": 55565001.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
