@@ -337,6 +337,12 @@
             "subtype": "Đầu tư",
             "description": "vàng",
             "timestamp": "2025-06-27T12:34:22.771570"
+        },
+        {
+            "amount": 243100.0,
+            "subtype": "Thảo Mộc",
+            "description": "bỉm",
+            "timestamp": "2025-06-28T12:31:07.106103"
         }
     ],
     "savings": [
@@ -365,7 +371,7 @@
             "timestamp": "2025-05-02T21:29:52.259627"
         }
     ],
-    "current_balance": 55565001.0,
+    "current_balance": 55321901.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
