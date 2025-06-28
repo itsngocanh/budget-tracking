@@ -343,6 +343,12 @@
             "subtype": "Thảo Mộc",
             "description": "bỉm",
             "timestamp": "2025-06-28T12:31:07.106103"
+        },
+        {
+            "amount": 60000.0,
+            "subtype": "Chăm sóc bản thân",
+            "description": "gội đầu",
+            "timestamp": "2025-06-28T14:34:42.479045"
         }
     ],
     "savings": [
@@ -371,7 +377,7 @@
             "timestamp": "2025-05-02T21:29:52.259627"
         }
     ],
-    "current_balance": 55321901.0,
+    "current_balance": 55261901.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
