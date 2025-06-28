@@ -349,6 +349,12 @@
             "subtype": "Chăm sóc bản thân",
             "description": "gội đầu",
             "timestamp": "2025-06-28T14:34:42.479045"
+        },
+        {
+            "amount": 750000.0,
+            "subtype": "Chăm sóc bản thân",
+            "description": "triệt nách",
+            "timestamp": "2025-06-28T15:00:30.400179"
         }
     ],
     "savings": [
@@ -377,7 +383,7 @@
             "timestamp": "2025-05-02T21:29:52.259627"
         }
     ],
-    "current_balance": 55261901.0,
+    "current_balance": 54511901.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
