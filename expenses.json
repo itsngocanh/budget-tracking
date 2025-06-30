@@ -373,6 +373,12 @@
             "subtype": "Chăm sóc bản thân",
             "description": "quần áo",
             "timestamp": "2025-06-30T22:58:00.005734"
+        },
+        {
+            "amount": 312320.0,
+            "subtype": "Chăm sóc bản thân",
+            "description": "quần áo",
+            "timestamp": "2025-07-01T00:07:54.226516"
         }
     ],
     "savings": [
@@ -401,7 +407,7 @@
             "timestamp": "2025-05-02T21:29:52.259627"
         }
     ],
-    "current_balance": 53767941.0,
+    "current_balance": 53455621.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
