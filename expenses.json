@@ -367,6 +367,12 @@
             "subtype": "Đồ dùng gia đình",
             "description": "bếp",
             "timestamp": "2025-06-28T16:52:25.684830"
+        },
+        {
+            "amount": 428400.0,
+            "subtype": "Chăm sóc bản thân",
+            "description": "quần áo",
+            "timestamp": "2025-06-30T22:58:00.005734"
         }
     ],
     "savings": [
@@ -395,7 +401,7 @@
             "timestamp": "2025-05-02T21:29:52.259627"
         }
     ],
-    "current_balance": 54196341.0,
+    "current_balance": 53767941.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
