@@ -391,6 +391,12 @@
             "subtype": "Ăn vặt",
             "description": "trà sữa",
             "timestamp": "2025-07-01T13:05:58.519279"
+        },
+        {
+            "amount": 3500000.0,
+            "subtype": "Thảo Mộc",
+            "description": "dì Mai",
+            "timestamp": "2025-07-01T13:08:17.060396"
         }
     ],
     "savings": [
@@ -419,7 +425,7 @@
             "timestamp": "2025-05-02T21:29:52.259627"
         }
     ],
-    "current_balance": 54382621.0,
+    "current_balance": 50882621.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
