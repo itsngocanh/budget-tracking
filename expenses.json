@@ -435,9 +435,15 @@
             "subtype": "Monthly Savings",
             "description": "tiết kiệm hàng tháng",
             "timestamp": "2025-05-02T21:29:52.259627"
+        },
+        {
+            "amount": 1000000.0,
+            "subtype": "Quỹ Thảo Mộc",
+            "description": "bố cho Thảo Mộc",
+            "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 60352621.0,
+    "current_balance": 59352621.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
