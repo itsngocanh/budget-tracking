@@ -35,6 +35,12 @@
             "subtype": "Thảo Mộc",
             "description": "cậu Hiếu cho",
             "timestamp": "2025-07-01T10:42:29.548883"
+        },
+        {
+            "amount": 10000000.0,
+            "subtype": "chồng",
+            "description": "chi phí hàng tháng",
+            "timestamp": "2025-07-02T12:42:30.636766"
         }
     ],
     "outcome": [
@@ -431,7 +437,7 @@
             "timestamp": "2025-05-02T21:29:52.259627"
         }
     ],
-    "current_balance": 50352621.0,
+    "current_balance": 60352621.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
