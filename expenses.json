@@ -397,6 +397,12 @@
             "subtype": "Thảo Mộc",
             "description": "dì Mai",
             "timestamp": "2025-07-01T13:08:17.060396"
+        },
+        {
+            "amount": 530000.0,
+            "subtype": "Chăm sóc bản thân",
+            "description": "kính",
+            "timestamp": "2025-07-02T12:42:02.507183"
         }
     ],
     "savings": [
@@ -425,7 +431,7 @@
             "timestamp": "2025-05-02T21:29:52.259627"
         }
     ],
-    "current_balance": 50882621.0,
+    "current_balance": 50352621.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
