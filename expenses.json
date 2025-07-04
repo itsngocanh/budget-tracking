@@ -41,6 +41,12 @@
             "subtype": "chồng",
             "description": "chi phí hàng tháng",
             "timestamp": "2025-07-02T12:42:30.636766"
+        },
+        {
+            "amount": 200000.0,
+            "subtype": "Thảo Mộc",
+            "description": "bác Na papvn cho",
+            "timestamp": "2025-07-04T14:20:34.575658"
         }
     ],
     "outcome": [
@@ -473,7 +479,7 @@
             "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 57240621.0,
+    "current_balance": 57440621.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
