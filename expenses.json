@@ -421,6 +421,12 @@
             "subtype": "Công ty",
             "description": "liên hoan chia tay",
             "timestamp": "2025-07-03T15:58:10.001979"
+        },
+        {
+            "amount": 280000.0,
+            "subtype": "Công ty",
+            "description": "liên hoan chia tay",
+            "timestamp": "2025-07-04T14:19:37.317651"
         }
     ],
     "savings": [
@@ -455,7 +461,7 @@
             "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 57595621.0,
+    "current_balance": 57315621.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
