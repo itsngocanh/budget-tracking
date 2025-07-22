@@ -547,6 +547,12 @@
             "subtype": "Di chuyển",
             "description": "xăng",
             "timestamp": "2025-07-22T09:06:35.212595"
+        },
+        {
+            "amount": 76000.0,
+            "subtype": "Chăm sóc bản thân",
+            "description": "áo mưa",
+            "timestamp": "2025-07-22T09:07:01.818216"
         }
     ],
     "savings": [
@@ -581,7 +587,7 @@
             "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 58028135.0,
+    "current_balance": 57952135.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
