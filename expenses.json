@@ -517,6 +517,12 @@
             "subtype": "Khác",
             "description": "Khác",
             "timestamp": "2025-07-22T09:00:40.187445"
+        },
+        {
+            "amount": 313000.0,
+            "subtype": "Thảo Mộc",
+            "description": "thuốc",
+            "timestamp": "2025-07-22T09:02:38.160530"
         }
     ],
     "savings": [
@@ -551,7 +557,7 @@
             "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 59713135.0,
+    "current_balance": 59400135.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
