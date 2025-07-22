@@ -589,6 +589,12 @@
             "subtype": "Thảo Mộc",
             "description": "đồ dùng",
             "timestamp": "2025-07-22T09:17:15.503847"
+        },
+        {
+            "amount": 374040.0,
+            "subtype": "Chăm sóc bản thân",
+            "description": "quần áo",
+            "timestamp": "2025-07-22T15:01:45.914301"
         }
     ],
     "savings": [
@@ -623,7 +629,7 @@
             "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 55943055.0,
+    "current_balance": 55569015.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
