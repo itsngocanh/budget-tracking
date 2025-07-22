@@ -53,6 +53,12 @@
             "subtype": "Chồng",
             "description": "Khác",
             "timestamp": "2025-07-22T08:58:11.455494"
+        },
+        {
+            "amount": 3000000.0,
+            "subtype": "Chồng",
+            "description": "Thảo Mộc tiêm",
+            "timestamp": "2025-07-22T08:59:28.462457"
         }
     ],
     "outcome": [
@@ -539,7 +545,7 @@
             "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 56833135.0,
+    "current_balance": 59833135.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
