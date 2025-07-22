@@ -595,6 +595,12 @@
             "subtype": "Chăm sóc bản thân",
             "description": "quần áo",
             "timestamp": "2025-07-22T15:01:45.914301"
+        },
+        {
+            "amount": 200000.0,
+            "subtype": "Ăn vặt",
+            "description": "trà sữa",
+            "timestamp": "2025-07-22T20:22:42.390692"
         }
     ],
     "savings": [
@@ -629,7 +635,7 @@
             "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 55569015.0,
+    "current_balance": 55369015.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
