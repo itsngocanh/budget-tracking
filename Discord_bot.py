@@ -44,45 +44,42 @@ GIT_BRANCH = 'main' # Or 'master', depending on your default branch name
 
 # --- Data Management ---
 def load_expenses():
+    """Loads expense data from a JSON file.
+    If the file is not found or empty, it initializes with a default structure.
+    Includes robust error handling for JSON decoding issues.
+    """
     print("Attempting to load expenses data...") # Debug print
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            try:
-                data = json.load(f)
-                # Ensure all top-level keys exist and initialize new ones if missing
-                data.setdefault("income", [])
-                data.setdefault("outcome", [])
-                data.setdefault("savings", [])
-                data.setdefault("current_balance", 0.0)
-                # NEW: Initialize initial category totals if missing
-                data.setdefault("initial_income_total", 0.0)
-                data.setdefault("initial_outcome_total", 0.0)
-                data.setdefault("initial_savings_total", 0.0)
-                print(f"Expenses data loaded successfully. Current balance: {data['current_balance']}") # Debug print
-                return data
-            except json.JSONDecodeError as e:
-                print(f"Error decoding JSON from {DATA_FILE}: {e}") # Debug print for JSON error
-                # If file is corrupted or empty, start fresh but notify
-                return {
-                    "income": [],
-                    "outcome": [],
-                    "savings": [],
-                    "current_balance": 0.0,
-                    "initial_income_total": 0.0,
-                    "initial_outcome_total": 0.0,
-                    "initial_savings_total": 0.0
-                }
-    print("No expenses data file found or new file created. Initializing new data structure.") # Debug print
-    return {
+    default_data = {
+        "current_balance": 0.0,
         "income": [],
         "outcome": [],
         "savings": [],
-        "current_balance": 0.0,
         "initial_income_total": 0.0,
         "initial_outcome_total": 0.0,
-        "initial_savings_total": 0.0
+        "initial_savings_total": 0.0,
+        "last_summary_date": None # Added this default key for daily summary
     }
-    pass
+
+    if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
+        print(f"'{DATA_FILE}' not found or is empty. Initializing with default structure.") # Debug print
+        # Return default data directly, no need to save here, save_expenses handles it on first write
+        return default_data 
+    
+    try:
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            # Ensure all top-level keys exist and initialize new ones if missing
+            for key, value in default_data.items():
+                data.setdefault(key, value)
+            print(f"Expenses data loaded successfully. Current balance: {data['current_balance']}") # Debug print
+            return data
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON from '{DATA_FILE}': {e}. Returning default structure.") # Debug print for JSON error
+        # If file is corrupted, return fresh data to prevent bot crash
+        return default_data
+    except Exception as e:
+        print(f"An unexpected error occurred while loading '{DATA_FILE}': {e}. Returning default structure.") # Debug print for other errors
+        return default_data
 
 def save_expenses(data):
     """Saves expense data to a JSON file and triggers Git push for both JSON and converted CSV.
@@ -110,7 +107,10 @@ def save_expenses(data):
     except Exception as e:
         print(f"Error saving expenses data or during Git operation: {e}")
 
-        # --- NEW FUNCTION: Git Automation ---
+# Global variable to hold expenses data, initialized on script start
+expenses_data = load_expenses()
+
+# --- Git Automation Function ---
 def push_to_github(file_path: str, commit_message: str):
     """
     Adds, commits, and pushes a specified file to the GitHub repository.
@@ -144,13 +144,14 @@ def push_to_github(file_path: str, commit_message: str):
             # IMPORTANT: Replace 'your-github-username' and 'your-repo-name' with your actual values!
             remote_url = f"https://oauth2:{github_token}@github.com/itsngocanh/budget-tracking.git"
 
-             # Get the 'origin' remote (standard name for main remote) and update its URL
+            # Get the 'origin' remote (standard name for main remote) and update its URL
             # THIS IS THE FIXED LINE: Use set_url() to correctly change the remote's URL
             origin = repo.remote(name='origin')
             origin.set_url(remote_url)
 
             # Push the changes to the specified branch
-            origin.push(refspec=f'{GIT_BRANCH}:{GIT_BRANCH}')
+            # Added set_upstream=True to explicitly set the upstream branch on the first push
+            origin.push(refspec=f'{GIT_BRANCH}:{GIT_BRANCH}', set_upstream=True) 
             print(f"Successfully pushed {file_path} to GitHub on branch {GIT_BRANCH}")
         else:
             print(f"No changes to {file_path} detected, skipping commit and push.")
@@ -196,8 +197,6 @@ def convert_json_to_csv(json_data, csv_filename="03.my_data.csv"):
         print(f"Error converting JSON to CSV: {e}")
         return False
 
-expenses_data = load_expenses()
-
 # --- Daily Balance Check Task ---
 @tasks.loop(time=time(2, 0, 0, tzinfo=timezone.utc)) # 2:00 AM UTC = 9:00 AM ICT (Vietnam time)
 async def daily_balance_check():
@@ -226,7 +225,6 @@ async def daily_balance_check():
         print(f"Channel with ID {DAILY_MESSAGE_CHANNEL_ID} not found or bot does not have access.")
 
 # --- NEW DAILY CSV EXPORT TASK ---
-# ...
 @tasks.loop(time=CSV_EXPORT_TIME_UTC) # Task runs daily at the specified UTC time
 async def daily_csv_export():
     """Automatically exports the current data to a CSV file and sends it to a designated channel."""
@@ -253,7 +251,6 @@ async def daily_csv_export():
             print(f"Failed to send daily CSV export: {e}")
     else:
         print("Failed to convert JSON to CSV for daily export. Check console for details.")
-# ...
 
 # --- Bot Events ---
 @bot.event
@@ -289,9 +286,12 @@ async def on_ready():
     description="Mô tả chi tiết khoản thu nhập (tùy chọn)"
 )
 async def income(interaction: discord.Interaction, amount: float, subtype: str, description: str = None):
+    # Defer the response immediately to avoid "Unknown interaction" if Git operations take time
+    await interaction.response.defer(ephemeral=False) # Use ephemeral=True if you want the response only for the user
+
     try:
         if amount <= 0:
-            await interaction.response.send_message("Số tiền thu nhập phải lớn hơn 0.")
+            await interaction.edit_original_response(content="Số tiền thu nhập phải lớn hơn 0.")
             return
 
         print(f"Before income: current_balance = {expenses_data['current_balance']}") # Debug print
@@ -303,13 +303,18 @@ async def income(interaction: discord.Interaction, amount: float, subtype: str, 
         })
         expenses_data["current_balance"] += amount
         print(f"After income: current_balance = {expenses_data['current_balance']}") # Debug print
+        
+        # Save expenses, which includes Git operations
         save_expenses(expenses_data)
-        await interaction.response.send_message(
-            f"Đã ghi nhận khoản thu: **{amount:,.0f} VNĐ** (Loại: {subtype}, Mô tả: {description if description else 'Không có mô tả'})\n"
-            f"Số dư hiện tại: **{expenses_data['current_balance']:,.0f} VNĐ**"
+
+        # Edit the original deferred response with the final message
+        await interaction.edit_original_response(
+            content=f"Đã ghi nhận khoản thu: **{amount:,.0f} VNĐ** (Loại: {subtype}, Mô tả: {description if description else 'Không có mô tả'})\n"
+                    f"Số dư hiện tại: **{expenses_data['current_balance']:,.0f} VNĐ**"
         )
     except Exception as e:
-        await interaction.response.send_message(f"Có lỗi xảy ra khi ghi nhận thu nhập: {e}")
+        # If an error occurs, edit the original response with the error message
+        await interaction.edit_original_response(content=f"Có lỗi xảy ra khi ghi nhận thu nhập: {e}")
         print(f"Error in /thu command: {e}") # Debug print for command error
 
 @bot.tree.command(name="chi", description="Ghi nhận một khoản chi tiêu mới.", guild=discord.Object(id=GUILD_ID))
@@ -319,9 +324,12 @@ async def income(interaction: discord.Interaction, amount: float, subtype: str, 
     description="Mô tả chi tiết khoản chi tiêu (tùy chọn)"
 )
 async def outcome(interaction: discord.Interaction, amount: float, subtype: str, description: str = None):
+    # Defer the response immediately
+    await interaction.response.defer(ephemeral=False)
+
     try:
         if amount <= 0:
-            await interaction.response.send_message("Số tiền chi tiêu phải lớn hơn 0.")
+            await interaction.edit_original_response(content="Số tiền chi tiêu phải lớn hơn 0.")
             return
 
         print(f"Before outcome: current_balance = {expenses_data['current_balance']}") # Debug print
@@ -333,7 +341,8 @@ async def outcome(interaction: discord.Interaction, amount: float, subtype: str,
         })
         expenses_data["current_balance"] -= amount
         print(f"After outcome: current_balance = {expenses_data['current_balance']}") # Debug print
-
+        
+        # Save expenses, which includes Git operations
         save_expenses(expenses_data)
 
         response_message = (
@@ -342,10 +351,10 @@ async def outcome(interaction: discord.Interaction, amount: float, subtype: str,
         )
         if expenses_data["current_balance"] < 0:
             response_message += "\n⚠️ **Cảnh báo: Chi tiêu này đã khiến số dư của bạn âm! Vui lòng chú ý quản lý tài chính.**"
-
-        await interaction.response.send_message(response_message)
+        
+        await interaction.edit_original_response(content=response_message)
     except Exception as e:
-        await interaction.response.send_message(f"Có lỗi xảy ra khi ghi nhận chi tiêu: {e}")
+        await interaction.edit_original_response(content=f"Có lỗi xảy ra khi ghi nhận chi tiêu: {e}")
         print(f"Error in /chi command: {e}") # Debug print for command error
 
 @bot.tree.command(name="tietkiem", description="Ghi nhận một khoản tiền tiết kiệm mới và trừ vào số dư.", guild=discord.Object(id=GUILD_ID))
@@ -355,9 +364,19 @@ async def outcome(interaction: discord.Interaction, amount: float, subtype: str,
     description="Mô tả chi tiết khoản tiết kiệm (tùy chọn)"
 )
 async def saving(interaction: discord.Interaction, amount: float, subtype: str, description: str = None):
+    # Defer the response immediately
+    await interaction.response.defer(ephemeral=False)
+
     try:
         if amount <= 0:
-            await interaction.response.send_message("Số tiền tiết kiệm phải lớn hơn 0.")
+            await interaction.edit_original_response(content="Số tiền tiết kiệm phải lớn hơn 0.")
+            return
+        
+        # Check if enough balance for saving
+        if expenses_data["current_balance"] < amount:
+            await interaction.edit_original_response(
+                content=f"Số dư của bạn ({expenses_data['current_balance']:,.0f} VNĐ) không đủ để tiết kiệm **{amount:,.0f} VNĐ**."
+            )
             return
 
         print(f"Before saving: current_balance = {expenses_data['current_balance']}") # Debug print
@@ -367,9 +386,10 @@ async def saving(interaction: discord.Interaction, amount: float, subtype: str, 
             "description": description if description else "Không có mô tả",
             "timestamp": datetime.now().isoformat()
         })
-        expenses_data["current_balance"] -= amount
+        expenses_data["current_balance"] -= amount # Savings reduces cash balance
         print(f"After saving: current_balance = {expenses_data['current_balance']}") # Debug print
-
+        
+        # Save expenses, which includes Git operations
         save_expenses(expenses_data)
 
         response_message = (
@@ -378,254 +398,225 @@ async def saving(interaction: discord.Interaction, amount: float, subtype: str, 
         )
         if expenses_data["current_balance"] < 0:
             response_message += "\n⚠️ **Cảnh báo: Việc tiết kiệm này đã khiến số dư của bạn âm! Vui lòng cân nhắc kế hoạch tài chính.**"
-
-        await interaction.response.send_message(response_message)
+        
+        await interaction.edit_original_response(content=response_message)
     except Exception as e:
-        await interaction.response.send_message(f"Có lỗi xảy ra khi ghi nhận tiết kiệm: {e}")
+        await interaction.edit_original_response(content=f"Có lỗi xảy ra khi ghi nhận tiết kiệm: {e}")
         print(f"Error in /tietkiem command: {e}") # Debug print for command error
 
 
-@bot.tree.command(name="tong_thu", description="Tính tổng thu nhập.", guild=discord.Object(id=GUILD_ID))
-@discord.app_commands.describe(
-    from_date="Ngày bắt đầu (YYYY-MM-DD, tùy chọn)",
-    to_date="Ngày kết thúc (YYYY-MM-DD, tùy chọn)",
-    subtype="Loại thu nhập cụ thể (tùy chọn)"
-)
-async def sum_income(interaction: discord.Interaction, from_date: str = None, to_date: str = None, subtype: str = None):
-    # Load the latest data to ensure up-to-date calculations
-    current_expenses_data = load_expenses()
+@bot.tree.command(name="balance", description="Hiển thị số dư tiền mặt hiện tại của bạn.", guild=discord.Object(id=GUILD_ID))
+async def balance(interaction: discord.Interaction):
+    """Displays the current cash balance by reloading the latest data."""
+    # Defer the response in case load_expenses is slow due to file access
+    await interaction.response.defer(ephemeral=False) 
 
-    total = current_expenses_data.get("initial_income_total", 0.0) # Include initial total
-    filtered_items = []
+    global expenses_data 
+    expenses_data = load_expenses() # Reload to get the absolute latest state of the balance
 
-    start_dt = None
-    end_dt = None
+    current_balance = expenses_data.get("current_balance", 0.0)
+    await interaction.edit_original_response(content=f"Số dư tiền mặt hiện tại của bạn là: **{current_balance:,.0f} VNĐ**")
+    print(f"Balance command executed by {interaction.user.name}. Current balance: {current_balance}.")
 
-    if from_date:
-        try:
-            start_dt = datetime.strptime(from_date, "%Y-%m-%d")
-        except ValueError:
-            await interaction.response.send_message("Định dạng ngày bắt đầu không hợp lệ. Vui lòng sử dụng `%Y-%m-%d`.")
-            return
-    if to_date:
-        try:
-            end_dt = datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
-        except ValueError:
-            await interaction.response.send_message("Định dạng ngày kết thúc không hợp lệ. Vui lòng sử dụng `%Y-%m-%d`.")
-            return
+@bot.tree.command(name="add", description="Thêm một khoản tiền vào số dư của bạn.", guild=discord.Object(id=GUILD_ID))
+async def add(interaction: discord.Interaction, amount: float):
+    """Adds a specified amount to the current balance and saves/pushes data."""
+    # Defer the response immediately
+    await interaction.response.defer(ephemeral=False)
 
-    for item in current_expenses_data["income"]: # Use current_expenses_data
-        item_dt = datetime.fromisoformat(item["timestamp"])
-
-        if start_dt and item_dt < start_dt:
-            continue
-        if end_dt and item_dt > end_dt:
-            continue
-
-        if subtype and subtype.lower() not in item["subtype"].lower():
-            continue
-
-        filtered_items.append(item)
-        total += item["amount"]
-
-    if not filtered_items and current_expenses_data.get("initial_income_total", 0.0) == 0:
-        await interaction.response.send_message("Không tìm thấy khoản thu nào phù hợp với tiêu chí của bạn.")
+    if amount <= 0:
+        await interaction.edit_original_response(content="Số tiền phải lớn hơn 0.")
         return
 
-    response_msg = f"Tổng thu nhập: **{total:,.0f} VNĐ**\n"
-    if current_expenses_data.get("initial_income_total", 0.0) > 0:
-        response_msg += f"(Bao gồm {current_expenses_data['initial_income_total']:,.0f} VNĐ từ mục nhập ban đầu)\n"
+    global expenses_data
+    expenses_data = load_expenses() # Ensure we're working with the freshest data
 
-    if filtered_items:
-        # Define a local limit for display here
-        display_limit_sum_commands = 10
-        response_msg += "Chi tiết thu nhập giao dịch gần đây:\n"
-        for item in filtered_items[-min(display_limit_sum_commands, len(filtered_items)):]:
-            response_msg += f"- {datetime.fromisoformat(item['timestamp']).strftime('%Y-%m-%d')}: {item['amount']:,.0f} VNĐ ({item['subtype']} - {item['description']})\n"
-        if len(filtered_items) > display_limit_sum_commands:
-            response_msg += f"... và còn {len(filtered_items) - display_limit_sum_commands} khoản thu khác.\n"
+    expenses_data["current_balance"] += amount
+    
+    # Save expenses, which includes Git operations
+    save_expenses(expenses_data)
 
-    await interaction.response.send_message(response_msg)
+    await interaction.edit_original_response(
+        content=f"Đã thêm **{amount:,.0f} VNĐ** vào số dư của bạn. Số dư hiện tại: **{expenses_data['current_balance']:,.0f} VNĐ**"
+    )
+    print(f"Add command executed. Amount: {amount}. New balance: {expenses_data['current_balance']}.")
 
-@bot.tree.command(name="tong_chi", description="Tính tổng chi tiêu.", guild=discord.Object(id=GUILD_ID))
-@discord.app_commands.describe(
-    from_date="Ngày bắt đầu (YYYY-MM-%d, tùy chọn)",
-    to_date="Ngày kết thúc (YYYY-MM-%d, tùy chọn)",
-    subtype="Loại chi tiêu cụ thể (tùy chọn)"
-)
-async def sum_outcome(interaction: discord.Interaction, from_date: str = None, to_date: str = None, subtype: str = None):
-    # Load the latest data
-    current_expenses_data = load_expenses()
+@bot.tree.command(name="subtract", description="Trừ một khoản tiền khỏi số dư của bạn.", guild=discord.Object(id=GUILD_ID))
+async def subtract(interaction: discord.Interaction, amount: float):
+    """Subtracts a specified amount from the current balance and saves/pushes data."""
+    # Defer the response immediately
+    await interaction.response.defer(ephemeral=False)
 
-    total = current_expenses_data.get("initial_outcome_total", 0.0) # Include initial total
-    filtered_items = []
-
-    start_dt = None
-    end_dt = None
-
-    if from_date:
-        try:
-            start_dt = datetime.strptime(from_date, "%Y-%m-%d")
-        except ValueError:
-            await interaction.response.send_message("Định dạng ngày bắt đầu không hợp lệ. Vui lòng sử dụng `%Y-%m-%d`.")
-            return
-    if to_date:
-        try:
-            end_dt = datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
-        except ValueError:
-            await interaction.response.send_message("Định dạng ngày kết thúc không hợp lệ. Vui lòng sử dụng `%Y-%m-%d`.")
-            return
-
-    for item in current_expenses_data["outcome"]: # Use current_expenses_data
-        item_dt = datetime.fromisoformat(item["timestamp"])
-
-        if start_dt and item_dt < start_dt:
-            continue
-        if end_dt and item_dt > end_dt:
-            continue
-
-        if subtype and subtype.lower() not in item["subtype"].lower():
-            continue
-
-        filtered_items.append(item)
-        total += item["amount"]
-
-    if not filtered_items and current_expenses_data.get("initial_outcome_total", 0.0) == 0:
-        await interaction.response.send_message("Không tìm thấy khoản chi nào phù hợp với tiêu chí của bạn.")
+    if amount <= 0:
+        await interaction.edit_original_response(content="Số tiền phải lớn hơn 0.")
         return
 
-    response_msg = f"Tổng chi tiêu: **{total:,.0f} VNĐ**\n"
-    if current_expenses_data.get("initial_outcome_total", 0.0) > 0:
-        response_msg += f"(Bao gồm {current_expenses_data['initial_outcome_total']:,.0f} VNĐ từ mục nhập ban đầu)\n"
+    global expenses_data
+    expenses_data = load_expenses() # Ensure we're working with the freshest data
 
-    if filtered_items:
-        # Define a local limit for display here
-        display_limit_sum_commands = 10
-        response_msg += "Chi tiết chi tiêu giao dịch gần đây:\n"
-        for item in filtered_items[-min(display_limit_sum_commands, len(filtered_items)):]:
-            response_msg += f"- {datetime.fromisoformat(item['timestamp']).strftime('%Y-%m-%d')}: {item['amount']:,.0f} VNĐ ({item['subtype']} - {item['description']})\n"
-        if len(filtered_items) > display_limit_sum_commands:
-            response_msg += f"... và còn {len(filtered_items) - display_limit_sum_commands} khoản chi khác.\n"
-
-    await interaction.response.send_message(response_msg)
-
-@bot.tree.command(name="tong_tietkiem", description="Tính tổng tiền tiết kiệm.", guild=discord.Object(id=GUILD_ID))
-@discord.app_commands.describe(
-    from_date="Ngày bắt đầu (YYYY-MM-%d, tùy chọn)",
-    to_date="Ngày kết thúc (YYYY-MM-%d, tùy chọn)",
-    subtype="Loại tiết kiệm cụ thể (tùy chọn)"
-)
-async def sum_saving(interaction: discord.Interaction, from_date: str = None, to_date: str = None, subtype: str = None):
-    # Load the latest data
-    current_expenses_data = load_expenses()
-
-    total = current_expenses_data.get("initial_savings_total", 0.0) # Include initial total
-    filtered_items = []
-
-    start_dt = None
-    end_dt = None
-
-    if from_date:
-        try:
-            start_dt = datetime.strptime(from_date, "%Y-%m-%d")
-        except ValueError:
-            await interaction.response.send_message("Định dạng ngày bắt đầu không hợp lệ. Vui lòng sử dụng `%Y-%m-%d`.")
-            return
-    if to_date:
-        try:
-            end_dt = datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
-        except ValueError:
-            await interaction.response.send_message("Định dạng ngày kết thúc không hợp lệ. Vui lòng sử dụng `%Y-%m-%d`.")
-            return
-
-    for item in current_expenses_data["savings"]: # Use current_expenses_data
-        item_dt = datetime.fromisoformat(item["timestamp"])
-
-        if start_dt and item_dt < start_dt:
-            continue
-        if end_dt and item_dt > end_dt:
-            continue
-
-        if subtype and subtype.lower() not in item["subtype"].lower():
-            continue
-
-        filtered_items.append(item)
-        total += item["amount"]
-
-    if not filtered_items and current_expenses_data.get("initial_savings_total", 0.0) == 0:
-        await interaction.response.send_message("Không tìm thấy khoản tiết kiệm nào phù hợp với tiêu chí của bạn.")
-        return
-
-    response_msg = f"Tổng tiền tiết kiệm: **{total:,.0f} VNĐ**\n"
-    if current_expenses_data.get("initial_savings_total", 0.0) > 0:
-        response_msg += f"(Bao gồm {current_expenses_data['initial_savings_total']:,.0f} VNĐ từ mục nhập ban đầu)\n"
-
-    if filtered_items:
-        # Define a local limit for display here
-        display_limit_sum_commands = 10
-        response_msg += "Chi tiết khoản tiết kiệm giao dịch gần đây:\n"
-        for item in filtered_items[-min(display_limit_sum_commands, len(filtered_items)):]:
-            response_msg += f"- {datetime.fromisoformat(item['timestamp']).strftime('%Y-%m-%d')}: {item['amount']:,.0f} VNĐ ({item['subtype']} - {item['description']})\n"
-        if len(filtered_items) > display_limit_sum_commands:
-            response_msg += f"... và còn {len(filtered_items) - display_limit_sum_commands} khoản tiết kiệm khác.\n"
-
-    await interaction.response.send_message(response_msg)
-
-@bot.tree.command(name="clear_expense", description="Chọn và xóa một khoản thu, chi, hoặc tiết kiệm cụ thể.", guild=discord.Object(id=GUILD_ID))
-@discord.app_commands.describe(
-    expense_type="Loại khoản cần xóa (income/outcome/saving)",
-    index="Chỉ số chính xác của khoản cần xóa (dùng lệnh '/list_expenses' để xem)"
-)
-async def clear_expense(interaction: discord.Interaction, expense_type: str, index: int):
-    expense_type_lower = expense_type.lower()
-    if expense_type_lower not in ["income", "outcome", "saving"]:
-        await interaction.response.send_message("Loại khoản không hợp lệ. Vui lòng chọn 'income', 'outcome', hoặc 'saving'.")
-        return
-
-    # Load the latest data
-    current_expenses_data = load_expenses()
-
-    key_mapping = {
-        "income": "income",
-        "outcome": "outcome",
-        "saving": "savings"
-    }
-    actual_key = key_mapping.get(expense_type_lower)
-    if not actual_key:
-        await interaction.response.send_message("Lỗi nội bộ: Không thể ánh xạ loại khoản chi phí.")
-        return
-
-    target_list = current_expenses_data[actual_key]
-
-    # Check if the provided index is within the valid range of the actual list
-    if not (0 <= index < len(target_list)): # Index is now 0-based
-        await interaction.response.send_message("Chỉ số không hợp lệ hoặc khoản không tồn tại. Vui lòng kiểm tra lại bằng lệnh '/list_expenses' mới nhất.")
-        return
-
-    try:
-        removed_item = target_list.pop(index) # Use the index directly
-
-        if expense_type_lower == "income":
-            current_expenses_data["current_balance"] -= removed_item["amount"]
-        elif expense_type_lower in ["outcome", "saving"]:
-            current_expenses_data["current_balance"] += removed_item["amount"]
-
-        save_expenses(current_expenses_data)
-
-        global expenses_data
-        expenses_data = load_expenses()
-
-        await interaction.response.send_message(
-            f"Đã xóa khoản **{expense_type_lower}**:\n"
-            f"**Số tiền:** {removed_item['amount']:,.0f} VNĐ\n"
-            f"**Loại:** {removed_item['subtype']}\n"
-            f"**Mô tả:** {removed_item['description']}\n"
-            f"**Thời gian:** {datetime.fromisoformat(removed_item['timestamp']).strftime('%Y-%m-%d %H:%M:%S')}\n"
-            f"Số dư hiện tại: **{expenses_data['current_balance']:,.0f} VNĐ**"
+    if expenses_data["current_balance"] < amount:
+        await interaction.edit_original_response(
+            content=f"Số dư của bạn ({expenses_data['current_balance']:,.0f} VNĐ) không đủ để trừ **{amount:,.0f} VNĐ**."
         )
-    except Exception as e:
-        await interaction.response.send_message(f"Có lỗi xảy ra khi xóa khoản: {e}")
-        print(f"Error in /clear_expense command: {e}")
+        return
+
+    expenses_data["current_balance"] -= amount
+    
+    # Save expenses, which includes Git operations
+    save_expenses(expenses_data)
+
+    await interaction.edit_original_response(
+        content=f"Đã trừ **{amount:,.0f} VNĐ** khỏi số dư của bạn. Số dư hiện tại: **{expenses_data['current_balance']:,.0f} VNĐ**"
+    )
+    print(f"Subtract command executed. Amount: {amount}. New balance: {expenses_data['current_balance']}.")
+
+@bot.tree.command(name="input", description="Ghi nhận thu nhập, chi tiêu, hoặc tiết kiệm.", guild=discord.Object(id=GUILD_ID))
+@discord.app_commands.choices(category=[
+    discord.app_commands.Choice(name="Income (Thu nhập)", value="income"),
+    discord.app_commands.Choice(name="Outcome (Chi tiêu)", value="outcome"),
+    discord.app_commands.Choice(name="Saving (Tiết kiệm)", value="saving"),
+    discord.app_commands.Choice(name="Initial Income (Tổng thu nhập ban đầu)", value="initial_income"),
+    discord.app_commands.Choice(name="Initial Outcome (Tổng chi tiêu ban đầu)", value="initial_outcome"),
+    discord.app_commands.Choice(name="Initial Saving (Tổng tiết kiệm ban đầu)", value="initial_saving")
+])
+async def input_expense(
+    interaction: discord.Interaction,
+    amount: float, # Changed to float for consistency, previously was int in some places
+    category: discord.app_commands.Choice[str],
+    subtype: str = None,
+    description: str = None
+):
+    """
+    Records income, outcome, or savings transactions, or updates initial budget totals.
+    Args:
+        amount (float): The amount of money involved in the transaction.
+        category (str): The type of transaction (income, outcome, saving, initial_income, initial_outcome, initial_saving).
+        subtype (str, optional): A specific sub-category for the transaction (e.g., "Food", "Salary").
+        description (str, optional): A brief note or description about the transaction.
+    """
+    await interaction.response.defer(ephemeral=False) # Ensure ephemeral is consistent, previously was True
+
+    if amount <= 0:
+        await interaction.edit_original_response(content="Số tiền phải lớn hơn 0.")
+        return
+
+    global expenses_data
+    current_expenses_data = load_expenses() # Always load the freshest data to prevent race conditions
+
+    timestamp = datetime.now().isoformat() # ISO format for easy sorting and parsing
+
+    response_msg = ""
+
+    # Handle initial balance updates separately (these do not affect current_balance directly)
+    if category.value.startswith("initial_"):
+        if category.value == "initial_income":
+            current_expenses_data["initial_income_total"] += amount
+            response_msg = f"Đã thêm **{amount:,.0f} VNĐ** vào tổng thu nhập ban đầu."
+        elif category.value == "initial_outcome":
+            current_expenses_data["initial_outcome_total"] += amount
+            response_msg = f"Đã thêm **{amount:,.0f} VNĐ** vào tổng chi tiêu ban đầu."
+        elif category.value == "initial_saving":
+            current_expenses_data["initial_savings_total"] += amount
+            response_msg = f"Đã thêm **{amount:,.0f} VNĐ** vào tổng tiết kiệm ban đầu."
+        else:
+            await interaction.edit_original_response(content="Loại danh mục ban đầu không hợp lệ.")
+            return
+    else:
+        # Handle regular income, outcome, saving transactions
+        entry = {
+            "amount": amount,
+            "subtype": subtype if subtype else "Không có", # Default subtype
+            "description": description if description else "Không có", # Default description
+            "timestamp": timestamp,
+            "user": interaction.user.name # Record which user made the entry
+        }
+
+        if category.value == "income":
+            current_expenses_data["income"].append(entry)
+            current_expenses_data["current_balance"] += amount # Income adds to current balance
+            response_msg = f"Đã ghi nhận **{amount:,.0f} VNĐ** vào thu nhập. Số dư hiện tại: **{current_expenses_data['current_balance']:,.0f} VNĐ**"
+        elif category.value == "outcome":
+            if current_expenses_data["current_balance"] < amount:
+                await interaction.edit_original_response(content=f"Số dư của bạn ({current_expenses_data['current_balance']:,.0f} VNĐ) không đủ để chi tiêu **{amount:,.0f} VNĐ**.")
+                return
+            current_expenses_data["outcome"].append(entry)
+            current_expenses_data["current_balance"] -= amount # Outcome subtracts from current balance
+            response_msg = f"Đã ghi nhận **{amount:,.0f} VNĐ** vào chi tiêu. Số dư hiện tại: **{current_expenses_data['current_balance']:,.0f} VNĐ**"
+        elif category.value == "saving":
+            if current_expenses_data["current_balance"] < amount:
+                await interaction.edit_original_response(content=f"Số dư của bạn ({current_expenses_data['current_balance']:,.0f} VNĐ) không đủ để tiết kiệm **{amount:,.0f} VNĐ**.")
+                return
+            current_expenses_data["savings"].append(entry)
+            current_expenses_data["current_balance"] -= amount # Savings reduce cash balance (moving money from cash to savings)
+            response_msg = f"Đã ghi nhận **{amount:,.0f} VNĐ** vào tiết kiệm. Số dư hiện tại: **{current_expenses_data['current_balance']:,.0f} VNĐ**"
+        else:
+            await interaction.edit_original_response(content="Loại danh mục không hợp lệ. Vui lòng chọn 'Income', 'Outcome', hoặc 'Saving'.")
+            return
+
+    save_expenses(current_expenses_data) # Save the updated data, which automatically triggers Git push
+
+    # IMPORTANT: Reload the global expenses_data after saving from the function
+    # This ensures other commands see the very latest state of the data in memory.
+    expenses_data = load_expenses()
+
+    await interaction.edit_original_response(content=response_msg)
+    print(f"Input command executed. Category: {category.value}, Amount: {amount}. Current balance: {expenses_data['current_balance']}.")
+
+
+@bot.tree.command(name="export_csv", description="Xuất dữ liệu thu chi và tiết kiệm ra file CSV.", guild=discord.Object(id=GUILD_ID))
+async def export_csv(interaction: discord.Interaction):
+    """Exports all transaction data to a CSV file and sends it as a Discord attachment.
+    This is for manual, on-demand export to Discord, distinct from the daily automated export.
+    """
+    # Defer the response in case CSV conversion takes time
+    await interaction.response.defer(ephemeral=False)
+
+    csv_filename = "03.my_data.csv"
+    global expenses_data
+    expenses_data = load_expenses() # Ensure freshest data for export
+
+    if convert_json_to_csv(expenses_data, csv_filename):
+        try:
+            await interaction.edit_original_response(
+                content="Đây là dữ liệu thu chi và tiết kiệm của bạn:",
+                file=discord.File(csv_filename)
+            )
+            os.remove(csv_filename) # Clean up the local file after sending to Discord
+            # Note: No need to call push_to_github here as save_expenses already handles pushing 03.my_data.csv
+            # when data is modified. This command is purely for sending the file to Discord.
+        except Exception as e:
+            await interaction.edit_original_response(content=f"Có lỗi xảy ra khi xuất CSV: {e}")
+            print(f"Error sending CSV file via /export_csv command: {e}")
+    else:
+        await interaction.edit_original_response(content="Có lỗi xảy ra khi tạo file CSV.")
+        print("Error creating CSV file for /export_csv command.")
+
+@bot.tree.command(name="total", description="Hiển thị tổng thu nhập, chi tiêu và tiết kiệm ban đầu.", guild=discord.Object(id=GUILD_ID))
+async def total(interaction: discord.Interaction):
+    """Displays initial total income, outcome, and savings as configured by 'initial_' input commands."""
+    # Defer the response for consistency
+    await interaction.response.defer(ephemeral=False)
+
+    global expenses_data
+    expenses_data = load_expenses() # Load the latest data
+
+    initial_income = expenses_data.get("initial_income_total", 0.0)
+    initial_outcome = expenses_data.get("initial_outcome_total", 0.0)
+    initial_savings = expenses_data.get("initial_savings_total", 0.0)
+
+    # Create an embedded message for a clean display of initial totals
+    embed = discord.Embed(
+        title="Tổng Quan Ban Đầu",
+        description="Tổng thu nhập, chi tiêu và tiết kiệm được ghi nhận ban đầu (không thay đổi bởi giao dịch hàng ngày).",
+        color=discord.Color.green()
+    )
+    embed.add_field(name="Tổng Thu Nhập Ban Đầu", value=f"**{initial_income:,.0f} VNĐ**", inline=False)
+    embed.add_field(name="Tổng Chi Tiêu Ban Đầu", value=f"**{initial_outcome:,.0f} VNĐ**", inline=False)
+    embed.add_field(name="Tổng Tiết Kiệm Ban Đầu", value=f"**{initial_savings:,.0f} VNĐ**", inline=False)
+    embed.set_footer(text="Các số liệu này chỉ được cập nhật qua lệnh /input với danh mục 'Initial...'")
+
+    await interaction.edit_original_response(embed=embed)
+    print(f"Total command executed by {interaction.user.name}.")
 
 @bot.tree.command(name="list_expenses", description="Liệt kê các khoản thu/chi/tiết kiệm gần đây để hỗ trợ xóa.", guild=discord.Object(id=GUILD_ID))
 @discord.app_commands.describe(
@@ -659,7 +650,7 @@ async def list_expenses(interaction: discord.Interaction, expense_type: str = No
                     formatted_time = item['timestamp'] # Fallback if timestamp format is unexpected
                 income_lines.append(f"[{i}] {formatted_time}: {item['amount']:,.0f} VNĐ ({item['subtype']} - {item['description']})")
         else:
-            income_lines.append("Không có khoản thu nào.")
+            income_lines.append("Không có khoản thu nào.\n") # Added \n for consistent spacing
         income_lines.append("\n") # Add a separator
 
     # --- Outcome Section ---
@@ -675,7 +666,7 @@ async def list_expenses(interaction: discord.Interaction, expense_type: str = No
                     formatted_time = item['timestamp']
                 outcome_lines.append(f"[{i}] {formatted_time}: {item['amount']:,.0f} VNĐ ({item['subtype']} - {item['description']})")
         else:
-            outcome_lines.append("Không có khoản chi nào.")
+            outcome_lines.append("Không có khoản chi nào.\n") # Added \n for consistent spacing
         outcome_lines.append("\n") # Add a separator
 
     # --- Saving Section ---
@@ -691,7 +682,7 @@ async def list_expenses(interaction: discord.Interaction, expense_type: str = No
                     formatted_time = item['timestamp']
                 saving_lines.append(f"[{i}] {formatted_time}: {item['amount']:,.0f} VNĐ ({item['subtype']} - {item['description']})")
         else:
-            saving_lines.append("Không có khoản tiết kiệm nào.")
+            saving_lines.append("Không có khoản tiết kiệm nào.\n") # Added \n for consistent spacing
         saving_lines.append("\n") # Add a separator
 
     if not has_content:
@@ -707,7 +698,8 @@ async def list_expenses(interaction: discord.Interaction, expense_type: str = No
 
     for line in all_content_lines:
         # Check if adding the next line would exceed the chunk limit
-        if current_chunk_length + len(line) + 1 > MAX_CHUNK_LENGTH and current_chunk: # +1 for newline
+        # +1 for the newline character that will be added when joining lines later
+        if current_chunk_length + len(line) + 1 > MAX_CHUNK_LENGTH and current_chunk: 
             # If so, send the current chunk
             message_count += 1
             embed = discord.Embed(
@@ -745,178 +737,74 @@ async def list_expenses(interaction: discord.Interaction, expense_type: str = No
 
     print(f"List expenses command executed by {interaction.user.name}. Type: {expense_type if expense_type else 'all'}.")
 
-@bot.tree.command(name="export_csv", description="Xuất dữ liệu thu chi và tiết kiệm ra file CSV.", guild=discord.Object(id=GUILD_ID))
-async def export_csv(interaction: discord.Interaction):
-    csv_filename = "03.my_data.csv" # Use the specific name for Streamlit data
-
-    # Load the latest data for immediate export command
-    current_expenses_data = load_expenses()
-
-    header = ["Type", "Amount", "Subtype", "Description", "Timestamp"]
-    rows = []
-
-    for item in current_expenses_data["income"]:
-        rows.append(["Income", item["amount"], item["subtype"], item["description"], item["timestamp"]])
-
-    for item in current_expenses_data["outcome"]:
-        rows.append(["Outcome", item["amount"], item["subtype"], item["description"], item["timestamp"]])
-
-    for item in current_expenses_data["savings"]:
-        rows.append(["Saving", item["amount"], item["subtype"], item["description"], item["timestamp"]])
-
-    rows.sort(key=lambda x: x[4])
-
-    try:
-        with open(csv_filename, 'w', newline='', encoding='utf-8-sig') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(header)
-            writer.writerows(rows)
-
-        await interaction.response.send_message(file=discord.File(csv_filename))
-        os.remove(csv_filename) # Consider if you want to remove it immediately or leave it for Streamlit
-        # After exporting, push to GitHub
-        try:
-            push_to_github(csv_filename, "Automated CSV export from Discord bot")
-        except Exception as e:
-            print(f"Failed to push exported CSV to GitHub: {e}")
-    except Exception as e:
-        await interaction.response.send_message(f"Có lỗi xảy ra khi xuất CSV: {e}")
-        print(f"Error in /export_csv command: {e}") # Debug print for command error
-
-# IMPORTANT: Also consider when the '03.my_data.csv' is initially created or intended to be updated.
-# If 'expenses.json' is the primary source, and '03.my_data.csv' is generated *from* it,
-# you'll need a separate process to convert JSON to CSV and then push the CSV.
-# For simplicity, I've shown pushing DATA_FILE (expenses.json) and also added a call
-# in export_csv if that's the point where '03.my_data.csv' is fresh.
-
-# For Streamlit's 03.my_data.csv, you might need a separate mechanism.
-# Your Streamlit app's load_data() function currently handles missing CSV by creating sample data.
-# If your Discord bot is the *only* source of data, then the 'expenses.json' file is key.
-# You could modify load_data() in 01.Expense.py to read from 'expenses.json' directly,
-# or have a scheduled task on your bot to convert 'expenses.json' to '03.my_data.csv'
-# and then push '03.my_data.csv'.
-
-# If '03.my_data.csv' is manually maintained, then the Git automation would be less relevant
-# for automated updates from the bot. Assuming the bot is the source,
-# the save_expenses() is the place to trigger the push of expenses.json.
-# If you intend 03.my_data.csv to be the shared file, you need a function to convert json to csv
-# and trigger its push.
-
-# Let's add a simple conversion and push logic if you decide `expenses.json` should be converted to `03.my_data.csv`
-# and *that* CSV pushed.
-
-# --- Function to convert JSON to CSV (for Streamlit) ---
-def convert_json_to_csv(json_data, csv_filename="03.my_data.csv"):
-    header = ["Type", "Amount", "Subtype", "Description", "Timestamp"]
-    rows = []
-
-    for item in json_data["income"]:
-        rows.append(["income", item["amount"], item["subtype"], item["description"], item["timestamp"]])
-
-    for item in json_data["outcome"]:
-        rows.append(["outcome", -item["amount"], item["subtype"], item["description"], item["timestamp"]]) # Amount as negative for outcome
-
-    for item in json_data["savings"]:
-        rows.append(["saving", item["amount"], item["subtype"], item["description"], item["timestamp"]])
-
-    rows.sort(key=lambda x: x[4]) # Sort by timestamp
-
-    try:
-        with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(header)
-            writer.writerows(rows)
-        print(f"Successfully converted expenses.json to {csv_filename}")
-        return True
-    except Exception as e:
-        print(f"Error converting JSON to CSV: {e}")
-        return False
-
-# Modify save_expenses to also convert and push the CSV
-def save_expenses(data):
-    print("Attempting to save expenses data...")
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-    print(f"Expenses data saved successfully. New balance: {data['current_balance']}")
-    
-    # Try to push the JSON file
-    try:
-        push_to_github(DATA_FILE, "Update expenses JSON via Discord bot")
-    except Exception as e:
-        print(f"Failed to push {DATA_FILE} to GitHub: {e}")
-
-    # Now, convert to CSV and push the CSV as well for the Streamlit dashboard
-    if convert_json_to_csv(data, "03.my_data.csv"):
-        try:
-            push_to_github("03.my_data.csv", "Update 03.my_data.csv from expenses.json")
-        except Exception as e:
-            print(f"Failed to push 03.my_data.csv to GitHub: {e}")
-
-@bot.tree.command(name="balance", description="Kiểm tra số dư tiền mặt hiện có.", guild=discord.Object(id=GUILD_ID))
-async def balance(interaction: discord.Interaction):
-    # Load current data from file to ensure it's up-to-date
-    current_expenses_data = load_expenses()
-    current_balance = current_expenses_data.get('current_balance', 0.0)
-    response_message = f"Số dư tiền mặt hiện tại của bạn là: **{current_balance:,.0f} VNĐ**"
-    if current_balance < 0:
-        response_message += "\n⚠️ **Cảnh báo: Số dư của bạn đang âm! Vui lòng chú ý chi tiêu để tránh nợ nần.**"
-    await interaction.response.send_message(response_message)
-
-@bot.tree.command(name="input", description="Set or adjust initial amounts for cash balance or specific categories.", guild=discord.Object(id=GUILD_ID))
+@bot.tree.command(name="clear_expense", description="Chọn và xóa một khoản thu, chi, hoặc tiết kiệm cụ thể.", guild=discord.Object(id=GUILD_ID))
 @discord.app_commands.describe(
-    amount="The amount to input.",
-    category="Optional: Specify a category to adjust its initial total (Income, Outcome, Saving). If not specified, adds to overall cash balance."
+    expense_type="Loại khoản cần xóa (income/outcome/saving)",
+    index="Chỉ số chính xác của khoản cần xóa (dùng lệnh '/list_expenses' để xem)"
 )
-@discord.app_commands.choices(
-    category=[
-        discord.app_commands.Choice(name="Income", value="income"),
-        discord.app_commands.Choice(name="Outcome", value="outcome"),
-        discord.app_commands.Choice(name="Saving", value="saving")
-    ]
-)
-async def input_amount(interaction: discord.Interaction, amount: float, category: str = None):
+async def clear_expense(interaction: discord.Interaction, expense_type: str, index: int):
+    # Defer the response immediately as this involves data modification and Git ops
+    await interaction.response.defer(ephemeral=False)
+
+    expense_type_lower = expense_type.lower()
+    if expense_type_lower not in ["income", "outcome", "saving"]:
+        await interaction.edit_original_response(content="Loại khoản không hợp lệ. Vui lòng chọn 'income', 'outcome', hoặc 'saving'.")
+        return
+
+    # Load the latest data
+    current_expenses_data = load_expenses()
+
+    key_mapping = {
+        "income": "income",
+        "outcome": "outcome",
+        "saving": "savings"
+    }
+    actual_key = key_mapping.get(expense_type_lower)
+    if not actual_key:
+        await interaction.edit_original_response(content="Lỗi nội bộ: Không thể ánh xạ loại khoản chi phí.")
+        return
+
+    target_list = current_expenses_data[actual_key]
+
+    # Check if the provided index is within the valid range of the actual list
+    if not (0 <= index < len(target_list)): # Index is now 0-based
+        await interaction.edit_original_response(content="Chỉ số không hợp lệ hoặc khoản không tồn tại. Vui lòng kiểm tra lại bằng lệnh '/list_expenses' mới nhất.")
+        return
+
     try:
-        # Always load the latest data to operate on
-        current_expenses_data = load_expenses()
+        removed_item = target_list.pop(index) # Use the index directly
 
-        if amount < 0:
-            await interaction.response.send_message("The amount must be non-negative.")
-            return
+        # Adjust current_balance based on the type of removed item
+        if expense_type_lower == "income":
+            current_expenses_data["current_balance"] -= removed_item["amount"]
+        elif expense_type_lower == "outcome": # Outcome removal increases balance
+            current_expenses_data["current_balance"] += removed_item["amount"]
+        elif expense_type_lower == "saving": # Saving removal increases balance (money returns to cash)
+            current_expenses_data["current_balance"] += removed_item["amount"]
 
-        response_msg = "" # Initialize response message
+        # Save the updated data, which triggers Git push
+        save_expenses(current_expenses_data)
 
-        if category:
-            # If a category is specified, only update the initial total for that category
-            # and DO NOT affect current_balance.
-            if category == "income":
-                current_expenses_data["initial_income_total"] += amount
-                response_msg = f"Đã thêm **{amount:,.0f} VNĐ** vào tổng thu nhập ban đầu."
-            elif category == "outcome":
-                current_expenses_data["initial_outcome_total"] += amount
-                response_msg = f"Đã thêm **{amount:,.0f} VNĐ** vào tổng chi tiêu ban đầu."
-            elif category == "saving":
-                current_expenses_data["initial_savings_total"] += amount
-                response_msg = f"Đã thêm **{amount:,.0f} VNĐ** vào tổng tiết kiệm ban đầu."
-            else:
-                await interaction.response.send_message("Loại danh mục không hợp lệ. Vui lòng chọn 'Income', 'Outcome', hoặc 'Saving'.")
-                return
-        else:
-            # If no category is specified, ADD the amount to the current_balance.
-            current_expenses_data["current_balance"] += amount # Change from = to +=
-            response_msg = f"Đã thêm **{amount:,.0f} VNĐ** vào số dư tiền mặt của bạn. Số dư hiện tại: **{current_expenses_data['current_balance']:,.0f} VNĐ**"
-
-        save_expenses(current_expenses_data) # Save the updated data
-
-        # IMPORTANT: Reload the global expenses_data after saving from the function
-        # This ensures other commands see the very latest state.
+        # Reload the global expenses_data after saving from the function
         global expenses_data
         expenses_data = load_expenses()
 
-        await interaction.response.send_message(response_msg)
-        print(f"Input command executed. Category: {category}, Amount: {amount}. Current balance: {expenses_data['current_balance']}") # Debug print
+        await interaction.edit_original_response(
+            content=f"Đã xóa khoản **{expense_type_lower}**:\n"
+            f"**Số tiền:** {removed_item['amount']:,.0f} VNĐ\n"
+            f"**Loại:** {removed_item['subtype']}\n"
+            f"**Mô tả:** {removed_item['description']}\n"
+            f"**Thời gian:** {datetime.fromisoformat(removed_item['timestamp']).strftime('%Y-%m-%d %H:%M:%S')}\n"
+            f"Số dư hiện tại: **{expenses_data['current_balance']:,.0f} VNĐ**"
+        )
+        print(f"Clear expense command executed. Type: {expense_type_lower}, Index: {index}.") # Debug print
     except Exception as e:
-        await interaction.response.send_message(f"Có lỗi xảy ra khi xử lý lệnh /input: {e}")
-        print(f"Error in /input command: {e}") # Debug print for command error
+        await interaction.edit_original_response(content=f"Có lỗi xảy ra khi xóa khoản: {e}")
+        print(f"Error in /clear_expense command: {e}") # Debug print for command error
 
-# Run the bot
-bot.run(TOKEN)
+
+# Entry point for running the bot
+if __name__ == '__main__':
+    # Initial load of data when the script starts
+    expenses_data = load_expenses()
+    bot.run(TOKEN)
