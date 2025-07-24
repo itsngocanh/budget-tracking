@@ -637,6 +637,12 @@
             "subtype": "Thảo Mộc",
             "description": "đồ dùng",
             "timestamp": "2025-07-23T21:57:36.125169"
+        },
+        {
+            "amount": 77000.0,
+            "subtype": "Ăn uống",
+            "description": "bữa trưa",
+            "timestamp": "2025-07-24T20:47:26.034293"
         }
     ],
     "savings": [
@@ -671,7 +677,7 @@
             "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 54348115.0,
+    "current_balance": 54271115.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
