@@ -578,9 +578,11 @@ async def export_csv(interaction: discord.Interaction):
     if convert_json_to_csv(expenses_data, csv_filename):
         try:
             await interaction.edit_original_response(
-                content="Đây là dữ liệu thu chi và tiết kiệm của bạn:",
-                file=discord.File(csv_filename)
+                content="Đây là dữ liệu thu chi và tiết kiệm của bạn:"
             )
+            #Send the file as a follow up message
+            await interaction.followup.send(file=discord.File(csv_filename))
+            
             os.remove(csv_filename) # Clean up the local file after sending to Discord
             # Note: No need to call push_to_github here as save_expenses already handles pushing 03.my_data.csv
             # when data is modified. This command is purely for sending the file to Discord.
