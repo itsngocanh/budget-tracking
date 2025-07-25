@@ -16,24 +16,93 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Enhanced color palette
+COLORS = {
+    'income': '#2E8B57',      # Sea Green
+    'outcome': '#DC143C',     # Crimson
+    'saving': '#4169E1',      # Royal Blue
+    'primary': '#1f77b4',
+    'secondary': '#ff7f0e',
+    'success': '#2ca02c',
+    'warning': '#ff7f0e',
+    'danger': '#d62728',
+    'info': '#17a2b8',
+    'light': '#f8f9fa',
+    'dark': '#343a40'
+}
+
 # Custom CSS for better styling
 st.markdown("""
 <style>
     .metric-container {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 0.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 15px;
         margin: 0.5rem 0;
+        box-shadow: 0 4px 15px 0 rgba(31, 38, 135, 0.37);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
     }
+    
+    .metric-container-income {
+        background: linear-gradient(135deg, #2E8B57 0%, #228B22 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin: 0.5rem 0;
+        box-shadow: 0 4px 15px 0 rgba(46, 139, 87, 0.37);
+    }
+    
+    .metric-container-outcome {
+        background: linear-gradient(135deg, #DC143C 0%, #B22222 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin: 0.5rem 0;
+        box-shadow: 0 4px 15px 0 rgba(220, 20, 60, 0.37);
+    }
+    
+    .metric-container-saving {
+        background: linear-gradient(135deg, #4169E1 0%, #0000CD 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin: 0.5rem 0;
+        box-shadow: 0 4px 15px 0 rgba(65, 105, 225, 0.37);
+    }
+    
     .filter-container {
-        background-color: #ffffff;
-        padding: 1rem;
-        border-radius: 0.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 1.5rem;
+        border-radius: 15px;
         margin: 1rem 0;
-        border: 1px solid #e0e0e0;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
     }
+    
     .stSelectbox > div > div {
         background-color: white;
+        border-radius: 10px;
+    }
+    
+    .main-header {
+        text-align: center;
+        color: #2c3e50;
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 2rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .chart-container {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 1rem;
+        margin: 1rem 0;
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -146,7 +215,9 @@ def format_vnd(amount):
     Formats a numerical amount into VND currency string, using 'M' for millions.
     """
     if abs(amount) >= 1_000_000:
-        return f"{amount / 1_000_000:,.2f} M VND"
+        return f"{amount / 1_000_000:,.2f}M VND"
+    elif abs(amount) >= 1_000:
+        return f"{amount / 1_000:,.1f}K VND"
     return f"{amount:,.0f} VND"
 
 def create_filters(df, key_prefix=""):
@@ -154,17 +225,18 @@ def create_filters(df, key_prefix=""):
     Creates filter widgets (Type, Date Range, Subtype) in the Streamlit app.
     """
     st.markdown('<div class="filter-container">', unsafe_allow_html=True)
-    st.subheader("📊 Filters")
+    st.subheader("🎯 Smart Filters")
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
         type_options = df['type'].unique() if 'type' in df.columns and not df['type'].empty else []
         type_filter = st.multiselect(
-            "Type",
+            "💼 Transaction Type",
             options=list(type_options),
             default=list(type_options),
-            key=f"{key_prefix}_type"
+            key=f"{key_prefix}_type",
+            help="Select transaction types to analyze"
         )
 
     with col2:
@@ -172,11 +244,12 @@ def create_filters(df, key_prefix=""):
             min_date = df['timestamp'].min().date() 
             max_date = df['timestamp'].max().date()
             date_range = st.date_input(
-                "Timestamp Range",
+                "📅 Date Range",
                 value=(min_date, max_date),
                 min_value=min_date,
                 max_value=max_date,
-                key=f"{key_prefix}_date"
+                key=f"{key_prefix}_date",
+                help="Select the date range for analysis"
             )
         else:
             st.info("No valid 'Timestamp' column found for date filtering.")
@@ -193,10 +266,11 @@ def create_filters(df, key_prefix=""):
                 subtype_options = df['subtype'].unique()
             
         subtype_filter = st.multiselect(
-            "Subtype",
+            "🏷️ Category",
             options=list(subtype_options),
             default=list(subtype_options),
-            key=f"{key_prefix}_subtype"
+            key=f"{key_prefix}_subtype",
+            help="Filter by specific categories"
         )
 
     st.markdown('</div>', unsafe_allow_html=True)
@@ -225,9 +299,18 @@ def apply_filters(df, type_filter, date_range, subtype_filter):
 
     return filtered_df
 
+def create_enhanced_metric_card(label, value, container_class="metric-container", delta=None, delta_color="normal"):
+    """Creates an enhanced metric card with better styling"""
+    st.markdown(f'<div class="{container_class}">', unsafe_allow_html=True)
+    if delta:
+        st.metric(label=label, value=value, delta=delta, delta_color=delta_color)
+    else:
+        st.metric(label=label, value=value)
+    st.markdown('</div>', unsafe_allow_html=True)
+
 def create_metrics(df, overall_df=None):
     """
-    Creates and displays metric cards for current balance, total income, outcome, and savings.
+    Creates and displays enhanced metric cards for current balance, total income, outcome, and savings.
     """
     if df.empty or 'amount' not in df.columns or 'type' not in df.columns:
         total_income = 0
@@ -248,227 +331,577 @@ def create_metrics(df, overall_df=None):
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        st.metric(label="💰 Current Balance", value=format_vnd(current_balance))
-        st.markdown('</div>', unsafe_allow_html=True)
+        balance_color = "normal" if current_balance >= 0 else "inverse"
+        create_enhanced_metric_card("💰 Current Balance", format_vnd(current_balance), 
+                                  "metric-container", delta_color=balance_color)
 
     with col2:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        st.metric(label="📈 Total Income", value=format_vnd(total_income))
-        st.markdown('</div>', unsafe_allow_html=True)
+        create_enhanced_metric_card("📈 Total Income", format_vnd(total_income), 
+                                  "metric-container-income")
 
     with col3:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        st.metric(label="📉 Total Outcome", value=format_vnd(total_outcome))
-        st.markdown('</div>', unsafe_allow_html=True)
+        create_enhanced_metric_card("📉 Total Outcome", format_vnd(total_outcome), 
+                                  "metric-container-outcome")
 
     with col4:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        st.metric(label="🏦 Total Savings", value=format_vnd(total_savings))
-        st.markdown('</div>', unsafe_allow_html=True)
+        create_enhanced_metric_card("🏦 Total Savings", format_vnd(total_savings), 
+                                  "metric-container-saving")
 
-def create_line_chart(df, title="📈 Daily Trends by Category"):
+def create_enhanced_line_chart(df, title="📈 Daily Trends by Category"):
     """
-    Creates a line chart showing daily trends by category.
+    Creates an enhanced line chart with better styling and interactivity.
     """
     if df.empty or 'timestamp' not in df.columns or 'type' not in df.columns or 'amount' not in df.columns:
-        fig = go.Figure().update_layout(title=title, annotations=[dict(text="No data available for this chart.", showarrow=False)])
+        fig = go.Figure()
+        fig.update_layout(
+            title=title,
+            annotations=[dict(text="No data available for this chart.", 
+                            showarrow=False, font=dict(size=16, color="gray"))]
+        )
         return fig
 
     daily_data = df.groupby(['timestamp', 'type'])['amount'].sum().reset_index()
 
-    fig = px.line(
-        daily_data, 
-        x='timestamp', 
-        y='amount', 
-        color='type',
-        title=title,
-        labels={'amount': 'Amount (VND)', 'timestamp': 'Timestamp'}
-    )
+    fig = go.Figure()
 
-    fig.update_traces(mode='lines', fill='tozeroy')
-    fig.update_layout(height=400, hovermode='x unified')
+    for transaction_type in daily_data['type'].unique():
+        type_data = daily_data[daily_data['type'] == transaction_type]
+        
+        fig.add_trace(go.Scatter(
+            x=type_data['timestamp'],
+            y=type_data['amount'],
+            mode='lines+markers',
+            name=transaction_type.title(),
+            line=dict(
+                color=COLORS.get(transaction_type, COLORS['primary']),
+                width=3,
+                shape='spline'
+            ),
+            marker=dict(
+                size=6,
+                symbol='circle',
+                line=dict(width=2, color='white')
+            ),
+            fill='tonexty' if transaction_type != 'income' else 'tozeroy',
+            fillcolor=f"rgba{(*[int(COLORS.get(transaction_type, COLORS['primary'])[i:i+2], 16) for i in (1, 3, 5)], 0.1)}",
+            hovertemplate=f'<b>{transaction_type.title()}</b><br>' +
+                         'Date: %{x}<br>' +
+                         'Amount: %{y:,.0f} VND<br>' +
+                         '<extra></extra>'
+        ))
+
+    fig.update_layout(
+        title=dict(
+            text=title,
+            font=dict(size=20, color=COLORS['dark']),
+            x=0.5
+        ),
+        xaxis=dict(
+            title="Date",
+            gridcolor='rgba(128,128,128,0.2)',
+            showgrid=True,
+            zeroline=False
+        ),
+        yaxis=dict(
+            title="Amount (VND)",
+            gridcolor='rgba(128,128,128,0.2)',
+            showgrid=True,
+            zeroline=True,
+            zerolinecolor='rgba(128,128,128,0.5)'
+        ),
+        hovermode='x unified',
+        height=450,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(family="Arial, sans-serif"),
+        legend=dict(
+            orientation="h",
+            y=-0.1,
+            x=0.5,
+            xanchor='center'
+        )
+    )
 
     return fig
 
-def create_treemap(df, title="Tree Map"):
+def create_enhanced_treemap(df, title="🗺️ Distribution Treemap"):
     """
-    Creates a treemap visualizing the distribution of subtypes within types.
+    Creates an enhanced treemap with better colors and styling.
     """
     if df.empty or 'type' not in df.columns or 'subtype' not in df.columns or 'amount' not in df.columns:
-        fig = go.Figure().update_layout(title=title, annotations=[dict(text="No data available for this chart.", showarrow=False)])
+        fig = go.Figure()
+        fig.update_layout(
+            title=title,
+            annotations=[dict(text="No data available for this chart.", 
+                            showarrow=False, font=dict(size=16, color="gray"))]
+        )
         return fig
 
     treemap_data = df.copy()
     treemap_data['amount_abs'] = treemap_data['amount'].abs()
+    
+    # Create color mapping
+    color_values = []
+    for _, row in treemap_data.iterrows():
+        if row['type'] == 'income':
+            color_values.append(1)
+        elif row['type'] == 'outcome':
+            color_values.append(-1)
+        else:
+            color_values.append(0)
+    
+    treemap_data['color_val'] = color_values
 
-    fig = px.treemap(
-        treemap_data,
-        path=['type', 'subtype'],
-        values='amount_abs',
-        title=title,
-        color='amount',
-        color_continuous_scale='RdYlBu'
+    fig = go.Figure(go.Treemap(
+        labels=treemap_data['subtype'],
+        parents=treemap_data['type'],
+        values=treemap_data['amount_abs'],
+        textinfo="label+value+percent entry",
+        textfont=dict(size=12, color="white"),
+        marker=dict(
+            colorscale=[[0, COLORS['outcome']], 
+                       [0.5, COLORS['saving']], 
+                       [1, COLORS['income']]],
+            colorbar=dict(
+                title="Transaction Type",
+                tickvals=[-1, 0, 1],
+                ticktext=["Outcome", "Savings", "Income"]
+            ),
+            line=dict(width=2, color="white")
+        ),
+        hovertemplate='<b>%{label}</b><br>' +
+                     'Amount: %{value:,.0f} VND<br>' +
+                     'Percentage: %{percentEntry}<br>' +
+                     '<extra></extra>'
+    ))
+
+    fig.update_layout(
+        title=dict(
+            text=title,
+            font=dict(size=18, color=COLORS['dark']),
+            x=0.5
+        ),
+        height=400,
+        margin=dict(t=50, l=25, r=25, b=25),
+        paper_bgcolor='rgba(0,0,0,0)'
     )
 
-    fig.update_layout(height=400)
+    return fig
+
+def create_enhanced_pie_chart(df, group_by, title="📊 Distribution", show_legend=True):
+    """
+    Creates an enhanced pie chart with better styling.
+    """
+    if df.empty or group_by not in df.columns or 'amount' not in df.columns:
+        fig = go.Figure()
+        fig.update_layout(
+            title=title,
+            annotations=[dict(text="No data available", showarrow=False)]
+        )
+        return fig
+
+    pie_data = df.copy()
+    pie_data['amount_abs'] = pie_data['amount'].abs()
+    grouped_data = pie_data.groupby(group_by)['amount_abs'].sum().reset_index()
+    
+    # Create custom colors
+    colors = px.colors.qualitative.Set3[:len(grouped_data)]
+    
+    fig = go.Figure(go.Pie(
+        labels=grouped_data[group_by],
+        values=grouped_data['amount_abs'],
+        hole=0.4,
+        marker=dict(
+            colors=colors,
+            line=dict(color='white', width=2)
+        ),
+        textinfo='label+percent',
+        textfont=dict(size=12),
+        hovertemplate='<b>%{label}</b><br>' +
+                     'Amount: %{value:,.0f} VND<br>' +
+                     'Percentage: %{percent}<br>' +
+                     '<extra></extra>'
+    ))
+
+    fig.update_layout(
+        title=dict(
+            text=title,
+            font=dict(size=18, color=COLORS['dark']),
+            x=0.5
+        ),
+        height=400,
+        showlegend=show_legend,
+        legend=dict(
+            orientation="v",
+            x=1.05,
+            y=0.5
+        ),
+        paper_bgcolor='rgba(0,0,0,0)',
+        margin=dict(t=50, l=25, r=25, b=25)
+    )
+
+    return fig
+
+def create_enhanced_bar_chart(df, group_by, title, orientation='v'):
+    """
+    Creates an enhanced bar chart with better styling and colors.
+    """
+    if df.empty or group_by not in df.columns or 'type' not in df.columns or 'amount' not in df.columns:
+        fig = go.Figure()
+        fig.update_layout(
+            title=title,
+            annotations=[dict(text="No data available", showarrow=False)]
+        )
+        return fig
+
+    grouped_data = df.copy()
+    grouped_data['amount_abs'] = grouped_data['amount'].abs()
+    grouped_data_summed = grouped_data.groupby([group_by, 'type'])['amount_abs'].sum().reset_index()
+
+    # Sort by total amount
+    total_by_group = grouped_data.groupby(group_by)['amount_abs'].sum().sort_values(ascending=False)
+    sorted_categories = total_by_group.index.tolist()
+
+    fig = go.Figure()
+
+    for transaction_type in grouped_data_summed['type'].unique():
+        type_data = grouped_data_summed[grouped_data_summed['type'] == transaction_type]
+        
+        if orientation == 'h':
+            fig.add_trace(go.Bar(
+                y=type_data[group_by],
+                x=type_data['amount_abs'],
+                name=transaction_type.title(),
+                orientation='h',
+                marker=dict(
+                    color=COLORS.get(transaction_type, COLORS['primary']),
+                    line=dict(color='white', width=1)
+                ),
+                hovertemplate=f'<b>{transaction_type.title()}</b><br>' +
+                             f'{group_by}: %{{y}}<br>' +
+                             'Amount: %{x:,.0f} VND<br>' +
+                             '<extra></extra>'
+            ))
+        else:
+            fig.add_trace(go.Bar(
+                x=type_data[group_by],
+                y=type_data['amount_abs'],
+                name=transaction_type.title(),
+                marker=dict(
+                    color=COLORS.get(transaction_type, COLORS['primary']),
+                    line=dict(color='white', width=1)
+                ),
+                hovertemplate=f'<b>{transaction_type.title()}</b><br>' +
+                             f'{group_by}: %{{x}}<br>' +
+                             'Amount: %{y:,.0f} VND<br>' +
+                             '<extra></extra>'
+            ))
+
+    fig.update_layout(
+        title=dict(
+            text=title,
+            font=dict(size=18, color=COLORS['dark']),
+            x=0.5
+        ),
+        barmode='stack',
+        height=400,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(
+            gridcolor='rgba(128,128,128,0.2)',
+            showgrid=True,
+            title="Categories" if orientation == 'v' else "Amount (VND)"
+        ),
+        yaxis=dict(
+            gridcolor='rgba(128,128,128,0.2)',
+            showgrid=True,
+            title="Amount (VND)" if orientation == 'v' else "Categories"
+        ),
+        legend=dict(
+            orientation="h",
+            y=-0.2,
+            x=0.5,
+            xanchor='center'
+        )
+    )
+
     return fig
 
 def create_monthly_table(df):
     """
-    Creates a table summarizing monthly income, outcome, and savings.
+    Creates an enhanced table summarizing monthly income, outcome, and savings.
     """
     if df.empty or 'year_month' not in df.columns or 'type' not in df.columns or 'amount' not in df.columns:
-        st.info("Not enough data or missing columns for monthly summary table (year_month, type, amount).")
+        st.info("Not enough data or missing columns for monthly summary table.")
         return pd.DataFrame()
 
     monthly_data = df.groupby(['year_month', 'type'])['amount'].sum().reset_index()
     monthly_pivot = monthly_data.pivot(index='year_month', columns='type', values='amount').fillna(0)
     monthly_pivot = monthly_pivot.sort_index(ascending=False)
 
-    for col_type in ['income', 'outcome', 'saving']: 
-        if col_type in monthly_pivot.columns:
-            if col_type == 'outcome':
-                monthly_pivot[col_type] = monthly_pivot[col_type].abs().apply(format_vnd)
-            else:
-                monthly_pivot[col_type] = monthly_pivot[col_type].apply(format_vnd)
+    # Calculate net savings
+    if 'income' in monthly_pivot.columns and 'outcome' in monthly_pivot.columns:
+        monthly_pivot['net_savings'] = monthly_pivot['income'] + monthly_pivot['outcome']  # outcome is negative
+    
+    # Format values
+    for col_type in monthly_pivot.columns:
+        if col_type == 'outcome':
+            monthly_pivot[col_type] = monthly_pivot[col_type].abs().apply(format_vnd)
+        else:
+            monthly_pivot[col_type] = monthly_pivot[col_type].apply(format_vnd)
 
     return monthly_pivot
 
-def create_stacked_column_chart(df, group_by, title):
+def create_enhanced_area_chart(df, title="📈 Cumulative Trends"):
     """
-    Creates a stacked column chart grouped by a specified column and type.
+    Creates an enhanced area chart showing cumulative trends.
     """
-    if df.empty or group_by not in df.columns or 'type' not in df.columns or 'amount' not in df.columns:
-        fig = go.Figure().update_layout(title=title, annotations=[dict(text="No data available for this chart.", showarrow=False)])
+    if df.empty or 'timestamp' not in df.columns or 'type' not in df.columns or 'amount' not in df.columns:
+        fig = go.Figure()
+        fig.update_layout(
+            title=title,
+            annotations=[dict(text="No data available", showarrow=False)]
+        )
         return fig
 
-    grouped_data = df.copy()
-    grouped_data['amount_abs'] = grouped_data['amount'].abs()
+    # Prepare cumulative data
+    daily_data = df.groupby(['timestamp', 'type'])['amount'].sum().reset_index()
+    
+    fig = go.Figure()
 
-    grouped_data_summed = grouped_data.groupby([group_by, 'type'])['amount_abs'].sum().reset_index()
+    for transaction_type in daily_data['type'].unique():
+        type_data = daily_data[daily_data['type'] == transaction_type].sort_values('timestamp')
+        type_data['cumulative'] = type_data['amount'].cumsum()
+        
+        fig.add_trace(go.Scatter(
+            x=type_data['timestamp'],
+            y=type_data['cumulative'],
+            mode='lines',
+            name=f"Cumulative {transaction_type.title()}",
+            fill='tonexty' if transaction_type != 'income' else 'tozeroy',
+            line=dict(
+                color=COLORS.get(transaction_type, COLORS['primary']),
+                width=2,
+                shape='spline'
+            ),
+            fillcolor=f"rgba{(*[int(COLORS.get(transaction_type, COLORS['primary'])[i:i+2], 16) for i in (1, 3, 5)], 0.3)}",
+            hovertemplate=f'<b>Cumulative {transaction_type.title()}</b><br>' +
+                         'Date: %{x}<br>' +
+                         'Amount: %{y:,.0f} VND<br>' +
+                         '<extra></extra>'
+        ))
 
-    sorted_categories = grouped_data.groupby(group_by)['amount_abs'].sum().sort_values(ascending=False).index.tolist()
-
-    fig = px.bar(
-        grouped_data_summed,
-        x=group_by,
-        y='amount_abs',
-        color='type',
-        title=title,
-        labels={'amount_abs': 'Amount (VND)'},
-        category_orders={group_by: sorted_categories}
+    fig.update_layout(
+        title=dict(
+            text=title,
+            font=dict(size=18, color=COLORS['dark']),
+            x=0.5
+        ),
+        xaxis=dict(
+            title="Date",
+            gridcolor='rgba(128,128,128,0.2)',
+            showgrid=True
+        ),
+        yaxis=dict(
+            title="Cumulative Amount (VND)",
+            gridcolor='rgba(128,128,128,0.2)',
+            showgrid=True
+        ),
+        height=400,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        hovermode='x unified',
+        legend=dict(
+            orientation="h",
+            y=-0.15,
+            x=0.5,
+            xanchor='center'
+        )
     )
 
-    fig.update_layout(height=400)
     return fig
 
 def overview_page(df):
-    """Displays the Overview Dashboard page."""
-    st.title("🏠 Overview Dashboard")
+    """Displays the enhanced Overview Dashboard page."""
+    st.markdown('<h1 class="main-header">🏠 Financial Overview Dashboard</h1>', unsafe_allow_html=True)
 
-    # Reload button
-    col_reload, col_status = st.columns([0.2, 0.8])
+    # Reload button with better styling
+    col_reload, col_info = st.columns([0.2, 0.8])
     with col_reload:
-        if st.button("🔄 Reload Data", key="reload_overview"):
+        if st.button("🔄 Reload Data", key="reload_overview", help="Refresh data from source"):
             st.cache_data.clear()
             st.rerun()
+    
+    with col_info:
+        if not df.empty:
+            st.info(f"📊 Loaded {len(df):,} transactions | Date range: {df['timestamp'].min().strftime('%Y-%m-%d')} to {df['timestamp'].max().strftime('%Y-%m-%d')}")
 
-    # Filters
+    # Enhanced filters
     type_filter, date_range, subtype_filter = create_filters(df, "overview")
     filtered_df = apply_filters(df, type_filter, date_range, subtype_filter)
 
-    # All-time metrics
-    st.subheader("📊 All Time Summary")
+    # All-time metrics with enhanced styling
+    st.markdown("---")
+    st.subheader("💎 Financial Summary - All Time")
     create_metrics(df, overall_df=df)
 
     # Current filtered metrics
-    # Check if df is not empty before attempting to access columns
     if not df.empty and not filtered_df.equals(df):
-        st.subheader("🔍 Filtered Summary")
-        # Ensure 'type' column exists before filtering
-        total_income_filtered = filtered_df[filtered_df['type'] == 'income']['amount'].sum() if 'type' in filtered_df.columns else 0
-        total_outcome_filtered = abs(filtered_df[filtered_df['type'] == 'outcome']['amount'].sum()) if 'type' in filtered_df.columns else 0
-        total_savings_filtered = filtered_df[filtered_df['type'] == 'saving']['amount'].sum() if 'type' in filtered_df.columns else 0
+        st.markdown("---")
+        st.subheader("🎯 Filtered Period Analysis")
+        
+        if 'type' in filtered_df.columns:
+            total_income_filtered = filtered_df[filtered_df['type'] == 'income']['amount'].sum()
+            total_outcome_filtered = abs(filtered_df[filtered_df['type'] == 'outcome']['amount'].sum())
+            total_savings_filtered = filtered_df[filtered_df['type'] == 'saving']['amount'].sum()
+            net_filtered = total_income_filtered - total_outcome_filtered
 
-        col1_filtered, col2_filtered, col3_filtered, col4_filtered = st.columns(4)
-        with col1_filtered:
-            st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-            # Ensure 'type' column exists before filtering
-            overall_balance = df[df['type'] == 'income']['amount'].sum() - abs(df[df['type'] == 'outcome']['amount'].sum()) if 'type' in df.columns else 0
-            st.metric(label="💰 Current Balance (Overall)", value=format_vnd(overall_balance))
-            st.markdown('</div>', unsafe_allow_html=True)
-        with col2_filtered:
-            st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-            st.metric(label="📈 Filtered Income", value=format_vnd(total_income_filtered))
-            st.markdown('</div>', unsafe_allow_html=True)
-        with col3_filtered:
-            st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-            st.metric(label="📉 Filtered Outcome", value=format_vnd(total_outcome_filtered))
-            st.markdown('</div>', unsafe_allow_html=True)
-        with col4_filtered:
-            st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-            st.metric(label="🏦 Filtered Savings", value=format_vnd(total_savings_filtered))
-            st.markdown('</div>', unsafe_allow_html=True)
+            col1_f, col2_f, col3_f, col4_f = st.columns(4)
+            with col1_f:
+                create_enhanced_metric_card("💰 Net Income", format_vnd(net_filtered), "metric-container")
+            with col2_f:
+                create_enhanced_metric_card("📈 Period Income", format_vnd(total_income_filtered), "metric-container-income")
+            with col3_f:
+                create_enhanced_metric_card("📉 Period Outcome", format_vnd(total_outcome_filtered), "metric-container-outcome")
+            with col4_f:
+                create_enhanced_metric_card("🏦 Period Savings", format_vnd(total_savings_filtered), "metric-container-saving")
 
-    # Charts
+    # Enhanced Charts Section
     st.markdown("---")
-    st.subheader("📈 Daily Trends by Category")
+    st.subheader("📈 Comprehensive Financial Analysis")
+
+    # Main trend analysis
+    col1_trend, col2_trend = st.columns([2, 1])
+    with col1_trend:
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        line_chart = create_enhanced_line_chart(filtered_df, "📈 Daily Financial Trends")
+        st.plotly_chart(line_chart, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with col2_trend:
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        # Overall distribution pie chart
+        if 'type' in filtered_df.columns:
+            pie_chart = create_enhanced_pie_chart(filtered_df, 'type', "💼 Transaction Distribution")
+            st.plotly_chart(pie_chart, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # Cumulative trends
+    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+    cumulative_chart = create_enhanced_area_chart(filtered_df, "📊 Cumulative Financial Growth")
+    st.plotly_chart(cumulative_chart, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Category breakdown by type
+    st.markdown("---")
+    st.subheader("🗂️ Category-wise Financial Breakdown")
 
     if 'type' in filtered_df.columns:
         income_df_ov = filtered_df[filtered_df['type'] == 'income'].copy()
         outcome_df_ov = filtered_df[filtered_df['type'] == 'outcome'].copy()
         saving_df_ov = filtered_df[filtered_df['type'] == 'saving'].copy()
-    else:
-        st.info("Cannot categorize daily trends: 'type' column is missing in filtered data.")
-        income_df_ov = pd.DataFrame(columns=filtered_df.columns)
-        outcome_df_ov = pd.DataFrame(columns=filtered_df.columns)
-        saving_df_ov = pd.DataFrame(columns=filtered_df.columns)
 
-    st.markdown("#### Income Trends")
-    line_fig_income = create_line_chart(income_df_ov, "📈 Income Daily Trends")
-    st.plotly_chart(line_fig_income, use_container_width=True)
+        tab1, tab2, tab3 = st.tabs(["💚 Income Analysis", "🔴 Outcome Analysis", "💙 Savings Analysis"])
+        
+        with tab1:
+            col1_inc, col2_inc = st.columns(2)
+            with col1_inc:
+                st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                income_bar = create_enhanced_bar_chart(income_df_ov, 'subtype', "📊 Income by Category")
+                st.plotly_chart(income_bar, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            with col2_inc:
+                st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                income_treemap = create_enhanced_treemap(income_df_ov, "🗺️ Income Distribution Map")
+                st.plotly_chart(income_treemap, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("#### Outcome Trends")
-    line_fig_outcome = create_line_chart(outcome_df_ov, "📉 Outcome Daily Trends")
-    st.plotly_chart(line_fig_outcome, use_container_width=True)
+        with tab2:
+            col1_out, col2_out = st.columns(2)
+            with col1_out:
+                st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                outcome_bar = create_enhanced_bar_chart(outcome_df_ov, 'subtype', "📊 Expenses by Category")
+                st.plotly_chart(outcome_bar, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            with col2_out:
+                st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                outcome_treemap = create_enhanced_treemap(outcome_df_ov, "🗺️ Expense Distribution Map")
+                st.plotly_chart(outcome_treemap, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("#### Savings Trends")
-    line_fig_saving = create_line_chart(saving_df_ov, "🏦 Savings Daily Trends")
-    st.plotly_chart(line_fig_saving, use_container_width=True)
+        with tab3:
+            col1_sav, col2_sav = st.columns(2)
+            with col1_sav:
+                st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                saving_bar = create_enhanced_bar_chart(saving_df_ov, 'subtype', "📊 Savings by Category")
+                st.plotly_chart(saving_bar, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            with col2_sav:
+                st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                saving_treemap = create_enhanced_treemap(saving_df_ov, "🗺️ Savings Distribution Map")
+                st.plotly_chart(saving_treemap, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
 
+    # Enhanced Monthly Summary
     st.markdown("---")
-    st.subheader("🗺️ Subtypes Distribution by Category")
-
-    col1_dist, col2_dist, col3_dist = st.columns(3)
-
-    with col1_dist:
-        treemap_fig_income = create_treemap(income_df_ov, "🗺️ Income Distribution")
-        st.plotly_chart(treemap_fig_income, use_container_width=True)
-
-    with col2_dist:
-        treemap_fig_outcome = create_treemap(outcome_df_ov, "🗺️ Outcome Distribution")
-        st.plotly_chart(treemap_fig_outcome, use_container_width=True)
-
-    with col3_dist:
-        treemap_fig_saving = create_treemap(saving_df_ov, "🗺️ Savings Distribution")
-        st.plotly_chart(treemap_fig_saving, use_container_width=True)
-
-    # Monthly table
-    st.markdown("---")
-    st.subheader("📅 Monthly Summary Table")
-    monthly_table = create_monthly_table(filtered_df)
-    if not monthly_table.empty:
-        st.dataframe(monthly_table, use_container_width=True)
-    else:
-        st.info("No data available for the monthly summary table with current filters.")
+    st.subheader("📅 Monthly Financial Summary")
+    
+    col1_table, col2_chart = st.columns([1, 1])
+    
+    with col1_table:
+        monthly_table = create_monthly_table(filtered_df)
+        if not monthly_table.empty:
+            st.dataframe(
+                monthly_table, 
+                use_container_width=True,
+                height=400
+            )
+        else:
+            st.info("📊 No data available for monthly summary with current filters.")
+    
+    with col2_chart:
+        if not filtered_df.empty and 'year_month' in filtered_df.columns:
+            # Monthly trend chart
+            monthly_trend_data = filtered_df.groupby(['year_month', 'type'])['amount'].sum().reset_index()
+            monthly_trend_data['year_month_str'] = monthly_trend_data['year_month'].astype(str)
+            
+            fig_monthly = go.Figure()
+            
+            for transaction_type in monthly_trend_data['type'].unique():
+                type_data = monthly_trend_data[monthly_trend_data['type'] == transaction_type]
+                fig_monthly.add_trace(go.Scatter(
+                    x=type_data['year_month_str'],
+                    y=type_data['amount'],
+                    mode='lines+markers',
+                    name=transaction_type.title(),
+                    line=dict(
+                        color=COLORS.get(transaction_type, COLORS['primary']),
+                        width=3
+                    ),
+                    marker=dict(size=8)
+                ))
+            
+            fig_monthly.update_layout(
+                title="📈 Monthly Trends",
+                height=400,
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                xaxis=dict(title="Month", tickangle=45),
+                yaxis=dict(title="Amount (VND)"),
+                legend=dict(orientation="h", y=-0.2)
+            )
+            
+            st.plotly_chart(fig_monthly, use_container_width=True)
 
 def income_page(df):
-    """Displays the Income Dashboard page."""
-    st.title("📈 Income Dashboard")
+    """Displays the enhanced Income Dashboard page."""
+    st.markdown('<h1 class="main-header">📈 Income Analysis Dashboard</h1>', unsafe_allow_html=True)
 
     # Reload button
-    col_reload, col_status = st.columns([0.2, 0.8])
+    col_reload, col_info = st.columns([0.2, 0.8])
     with col_reload:
         if st.button("🔄 Reload Data", key="reload_income"):
             st.cache_data.clear()
@@ -476,64 +909,95 @@ def income_page(df):
 
     income_df = df[df['type'] == 'income'].copy() if 'type' in df.columns and 'income' in df['type'].unique() else pd.DataFrame(columns=df.columns)
 
+    with col_info:
+        if not income_df.empty:
+            st.success(f"💰 Found {len(income_df):,} income transactions")
+
     type_filter, date_range, subtype_filter = create_filters(income_df, "income")
     filtered_df = apply_filters(income_df, type_filter, date_range, subtype_filter)
 
     st.markdown("---")
-    st.subheader("💰 Income Summary")
-    col1, col2, col3 = st.columns(3)
+    st.subheader("💎 Income Performance Metrics")
+    
+    col1, col2, col3, col4 = st.columns(4)
+
+    overall_income = df[df['type'] == 'income']['amount'].sum() if 'type' in df.columns else 0
+    overall_outcome = abs(df[df['type'] == 'outcome']['amount'].sum()) if 'type' in df.columns else 0
+    all_time_income = income_df['amount'].sum() if 'amount' in income_df.columns else 0
+    filtered_income = filtered_df['amount'].sum() if 'amount' in filtered_df.columns else 0
 
     with col1:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        overall_income = df[df['type'] == 'income']['amount'].sum() if 'type' in df.columns else 0
-        overall_outcome = abs(df[df['type'] == 'outcome']['amount'].sum()) if 'type' in df.columns else 0
-        st.metric(label="💰 Current Overall Balance", value=format_vnd(overall_income - overall_outcome)) 
-        st.markdown('</div>', unsafe_allow_html=True)
-
+        create_enhanced_metric_card("💰 Net Worth Impact", format_vnd(overall_income - overall_outcome), "metric-container")
     with col2:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        st.metric("All Time Income", format_vnd(income_df['amount'].sum() if 'amount' in income_df.columns else 0))
-        st.markdown('</div>', unsafe_allow_html=True)
-
+        create_enhanced_metric_card("📈 Total Income", format_vnd(all_time_income), "metric-container-income")
     with col3:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        st.metric("Filtered Income", format_vnd(filtered_df['amount'].sum() if 'amount' in filtered_df.columns else 0))
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.subheader("📊 Income Breakdown")
-    col1, col2 = st.columns(2)
-
-    with col1:
-        subtype_fig = create_stacked_column_chart(filtered_df, 'subtype', "📊 Income by Subtype")
-        st.plotly_chart(subtype_fig, use_container_width=True)
-
-    with col2:
-        desc_fig = create_stacked_column_chart(filtered_df, 'description', "📝 Income by Description")
-        st.plotly_chart(desc_fig, use_container_width=True)
-
-    st.markdown("---")
-    col3, col4 = st.columns(2)
-
-    with col3:
-        treemap_fig = create_treemap(filtered_df, "🗺️ Income Distribution")
-        st.plotly_chart(treemap_fig, use_container_width=True)
-
+        create_enhanced_metric_card("🎯 Filtered Income", format_vnd(filtered_income), "metric-container-income")
     with col4:
-        st.subheader("📋 Income Details")
+        avg_income = all_time_income / len(income_df) if len(income_df) > 0 else 0
+        create_enhanced_metric_card("📊 Avg per Transaction", format_vnd(avg_income), "metric-container")
+
+    # Enhanced Charts
+    st.markdown("---")
+    st.subheader("📊 Income Deep Dive Analysis")
+
+    # Main income trend
+    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+    income_trend = create_enhanced_line_chart(filtered_df, "📈 Income Trends Over Time")
+    st.plotly_chart(income_trend, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Income breakdown charts
+    col1_break, col2_break = st.columns(2)
+    
+    with col1_break:
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        subtype_chart = create_enhanced_bar_chart(filtered_df, 'subtype', "💼 Income by Source")
+        st.plotly_chart(subtype_chart, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with col2_break:
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        pie_chart = create_enhanced_pie_chart(filtered_df, 'subtype', "🥧 Income Source Distribution")
+        st.plotly_chart(pie_chart, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # Description analysis
+    col3_desc, col4_detail = st.columns([1, 1])
+    
+    with col3_desc:
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        desc_chart = create_enhanced_bar_chart(filtered_df, 'description', "📝 Income by Description", 'h')
+        st.plotly_chart(desc_chart, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with col4_detail:
+        st.subheader("📋 Recent Income Transactions")
         if not filtered_df.empty and all(col in filtered_df.columns for col in ['timestamp', 'subtype', 'description', 'amount']):
-            income_table = filtered_df[['timestamp', 'subtype', 'description', 'amount']].sort_values('timestamp', ascending=False)
-            income_table['amount_formatted'] = income_table['amount'].apply(format_vnd)
-            st.dataframe(income_table[['timestamp', 'subtype', 'description', 'amount_formatted']], use_container_width=True)
+            income_display = filtered_df[['timestamp', 'subtype', 'description', 'amount']].copy()
+            income_display = income_display.sort_values('timestamp', ascending=False).head(10)
+            income_display['amount_formatted'] = income_display['amount'].apply(format_vnd)
+            income_display['date'] = income_display['timestamp'].dt.strftime('%Y-%m-%d')
+            
+            st.dataframe(
+                income_display[['date', 'subtype', 'description', 'amount_formatted']],
+                use_container_width=True,
+                height=400,
+                column_config={
+                    "date": "Date",
+                    "subtype": "Source",
+                    "description": "Description",
+                    "amount_formatted": "Amount"
+                }
+            )
         else:
-            st.info("Missing required columns or no data for income details table.")
+            st.info("📊 No income data available for detailed view.")
 
 def outcome_page(df):
-    """Displays the Outcome Dashboard page."""
-    st.title("📉 Outcome Dashboard")
+    """Displays the enhanced Outcome Dashboard page."""
+    st.markdown('<h1 class="main-header">📉 Expense Analysis Dashboard</h1>', unsafe_allow_html=True)
 
     # Reload button
-    col_reload, col_status = st.columns([0.2, 0.8])
+    col_reload, col_info = st.columns([0.2, 0.8])
     with col_reload:
         if st.button("🔄 Reload Data", key="reload_outcome"):
             st.cache_data.clear()
@@ -542,72 +1006,108 @@ def outcome_page(df):
     outcome_df = df[df['type'] == 'outcome'].copy() if 'type' in df.columns and 'outcome' in df['type'].unique() else pd.DataFrame(columns=df.columns)
     if 'amount' in outcome_df.columns:
         outcome_df['amount_display'] = outcome_df['amount'].abs()
-    else:
-        outcome_df['amount_display'] = 0
+
+    with col_info:
+        if not outcome_df.empty:
+            st.error(f"💸 Found {len(outcome_df):,} expense transactions")
 
     type_filter, date_range, subtype_filter = create_filters(outcome_df, "outcome")
     filtered_df = apply_filters(outcome_df, type_filter, date_range, subtype_filter)
     if 'amount' in filtered_df.columns:
-        filtered_df['amount_display'] = filtered_df['amount'].abs() 
-    else:
-        filtered_df['amount_display'] = 0
+        filtered_df['amount_display'] = filtered_df['amount'].abs()
 
     st.markdown("---")
-    st.subheader("💸 Outcome Summary")
-    col1, col2, col3 = st.columns(3)
+    st.subheader("💸 Expense Analysis Metrics")
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    overall_income = df[df['type'] == 'income']['amount'].sum() if 'type' in df.columns else 0
+    overall_outcome = abs(df[df['type'] == 'outcome']['amount'].sum()) if 'type' in df.columns else 0
+    all_time_outcome = outcome_df['amount_display'].sum() if 'amount_display' in outcome_df.columns else 0
+    filtered_outcome = filtered_df['amount_display'].sum() if 'amount_display' in filtered_df.columns else 0
 
     with col1:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        overall_income = df[df['type'] == 'income']['amount'].sum() if 'type' in df.columns else 0
-        overall_outcome = abs(df[df['type'] == 'outcome']['amount'].sum()) if 'type' in df.columns else 0
-        st.metric(label="💰 Current Overall Balance", value=format_vnd(overall_income - overall_outcome))
-        st.markdown('</div>', unsafe_allow_html=True)
-
+        create_enhanced_metric_card("💰 Remaining Balance", format_vnd(overall_income - overall_outcome), "metric-container")
     with col2:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        st.metric("All Time Outcome", format_vnd(outcome_df['amount_display'].sum()))
-        st.markdown('</div>', unsafe_allow_html=True)
-
+        create_enhanced_metric_card("📉 Total Expenses", format_vnd(all_time_outcome), "metric-container-outcome")
     with col3:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        st.metric("Filtered Outcome", format_vnd(filtered_df['amount_display'].sum()))
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.subheader("📊 Outcome Breakdown")
-    col1, col2 = st.columns(2)
-
-    with col1:
-        subtype_fig = create_stacked_column_chart(filtered_df, 'subtype', "📊 Outcome by Subtype")
-        st.plotly_chart(subtype_fig, use_container_width=True)
-
-    with col2:
-        desc_fig = create_stacked_column_chart(filtered_df, 'description', "📝 Outcome by Description")
-        st.plotly_chart(desc_fig, use_container_width=True)
-
-    st.markdown("---")
-    col3, col4 = st.columns(2)
-
-    with col3:
-        treemap_fig = create_treemap(filtered_df, "🗺️ Outcome Distribution")
-        st.plotly_chart(treemap_fig, use_container_width=True)
-
+        create_enhanced_metric_card("🎯 Filtered Expenses", format_vnd(filtered_outcome), "metric-container-outcome")
     with col4:
-        st.subheader("📅 Monthly Outcome Summary")
-        if not filtered_df.empty and 'year_month' in filtered_df.columns and 'amount_display' in filtered_df.columns:
-            monthly_outcome = filtered_df.groupby('year_month')['amount_display'].sum().reset_index()
-            monthly_outcome = monthly_outcome.sort_values('year_month', ascending=False)
-            monthly_outcome['amount_formatted'] = monthly_outcome['amount_display'].apply(format_vnd)
-            st.dataframe(monthly_outcome[['year_month', 'amount_formatted']], use_container_width=True)
-        else:
-            st.info("No data or missing required columns for monthly outcome summary.")
+        avg_expense = all_time_outcome / len(outcome_df) if len(outcome_df) > 0 else 0
+        create_enhanced_metric_card("📊 Avg per Transaction", format_vnd(avg_expense), "metric-container")
+
+    # Enhanced Charts
+    st.markdown("---")
+    st.subheader("📊 Expense Pattern Analysis")
+
+    # Main expense trend
+    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+    expense_trend = create_enhanced_line_chart(filtered_df, "📉 Expense Trends Over Time")
+    st.plotly_chart(expense_trend, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Expense breakdown
+    col1_exp, col2_exp = st.columns(2)
+    
+    with col1_exp:
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        category_chart = create_enhanced_bar_chart(filtered_df, 'subtype', "💳 Expenses by Category")
+        st.plotly_chart(category_chart, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with col2_exp:
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        expense_pie = create_enhanced_pie_chart(filtered_df, 'subtype', "🥧 Expense Distribution")
+        st.plotly_chart(expense_pie, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # Monthly expense analysis
+    col3_monthly, col4_top = st.columns(2)
+    
+    with col3_monthly:
+        st.subheader("📅 Monthly Expense Trends")
+        if not filtered_df.empty and 'year_month' in filtered_df.columns:
+            monthly_expenses = filtered_df.groupby('year_month')['amount_display'].sum().reset_index()
+            monthly_expenses = monthly_expenses.sort_values('year_month', ascending=False).head(12)
+            monthly_expenses['amount_formatted'] = monthly_expenses['amount_display'].apply(format_vnd)
+            monthly_expenses['month'] = monthly_expenses['year_month'].astype(str)
+            
+            st.dataframe(
+                monthly_expenses[['month', 'amount_formatted']],
+                use_container_width=True,
+                height=350,
+                column_config={
+                    "month": "Month",
+                    "amount_formatted": "Total Expenses"
+                }
+            )
+
+    with col4_top:
+        st.subheader("🔝 Top Expense Categories")
+        if not filtered_df.empty and 'subtype' in filtered_df.columns:
+            top_categories = filtered_df.groupby('subtype')['amount_display'].sum().sort_values(ascending=False).head(10)
+            top_categories_df = pd.DataFrame({
+                'Category': top_categories.index,
+                'Amount': top_categories.values
+            })
+            top_categories_df['Amount_Formatted'] = top_categories_df['Amount'].apply(format_vnd)
+            
+            st.dataframe(
+                top_categories_df[['Category', 'Amount_Formatted']],
+                use_container_width=True,
+                height=350,
+                column_config={
+                    "Category": "Expense Category",
+                    "Amount_Formatted": "Total Amount"
+                }
+            )
 
 def savings_page(df):
-    """Displays the Savings Dashboard page."""
-    st.title("🏦 Savings Dashboard")
+    """Displays the enhanced Savings Dashboard page."""
+    st.markdown('<h1 class="main-header">🏦 Savings Analysis Dashboard</h1>', unsafe_allow_html=True)
 
     # Reload button
-    col_reload, col_status = st.columns([0.2, 0.8])
+    col_reload, col_info = st.columns([0.2, 0.8])
     with col_reload:
         if st.button("🔄 Reload Data", key="reload_savings"):
             st.cache_data.clear()
@@ -615,101 +1115,168 @@ def savings_page(df):
 
     savings_df = df[df['type'] == 'saving'].copy() if 'type' in df.columns and 'saving' in df['type'].unique() else pd.DataFrame(columns=df.columns)
 
+    with col_info:
+        if not savings_df.empty:
+            st.info(f"🏦 Found {len(savings_df):,} savings transactions")
+
     type_filter, date_range, subtype_filter = create_filters(savings_df, "savings")
     filtered_df = apply_filters(savings_df, type_filter, date_range, subtype_filter)
 
-    # Metrics
+    # Enhanced Metrics
     st.markdown("---")
-    st.subheader("🏦 Savings Summary")
-    col1, col2, col3 = st.columns(3) 
+    st.subheader("🏦 Savings Growth Metrics")
+    
+    col1, col2, col3, col4 = st.columns(4)
+
+    overall_income = df[df['type'] == 'income']['amount'].sum() if 'type' in df.columns else 0
+    overall_outcome = abs(df[df['type'] == 'outcome']['amount'].sum()) if 'type' in df.columns else 0
+    all_time_savings = savings_df['amount'].sum() if 'amount' in savings_df.columns else 0
+    filtered_savings = filtered_df['amount'].sum() if 'amount' in filtered_df.columns else 0
+
     with col1:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        overall_income = df[df['type'] == 'income']['amount'].sum() if 'type' in df.columns else 0
-        overall_outcome = abs(df[df['type'] == 'outcome']['amount'].sum()) if 'type' in df.columns else 0
-        st.metric(label="💰 Current Overall Balance", value=format_vnd(overall_income - overall_outcome))
-        st.markdown('</div>', unsafe_allow_html=True)
-    
+        create_enhanced_metric_card("💰 Net Financial Position", format_vnd(overall_income - overall_outcome), "metric-container")
     with col2:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        st.metric("All Time Savings", format_vnd(savings_df['amount'].sum() if 'amount' in savings_df.columns else 0))
-        st.markdown('</div>', unsafe_allow_html=True)
-    
+        create_enhanced_metric_card("🏦 Total Savings", format_vnd(all_time_savings), "metric-container-saving")
     with col3:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        st.metric("Filtered Savings", format_vnd(filtered_df['amount'].sum() if 'amount' in filtered_df.columns else 0))
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Charts
-    st.markdown("---")
-    st.subheader("📊 Savings Breakdown")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        subtype_fig = create_stacked_column_chart(
-            filtered_df, 'subtype', 
-            "📊 Savings by Subtype"
-        )
-        st.plotly_chart(subtype_fig, use_container_width=True)
-    
-    with col2:
-        desc_fig = create_stacked_column_chart(
-            filtered_df, 'description', 
-            "📝 Savings by Description"
-        )
-        st.plotly_chart(desc_fig, use_container_width=True)
-    
-    st.markdown("---")
-    col3, col4 = st.columns(2)
-    
-    with col3:
-        treemap_fig = create_treemap(filtered_df, "🗺️ Savings Distribution")
-        st.plotly_chart(treemap_fig, use_container_width=True)
-    
+        create_enhanced_metric_card("🎯 Filtered Savings", format_vnd(filtered_savings), "metric-container-saving")
     with col4:
-        # Monthly savings table
+        savings_rate = (all_time_savings / overall_income * 100) if overall_income > 0 else 0
+        create_enhanced_metric_card("📊 Savings Rate", f"{savings_rate:.1f}%", "metric-container")
+
+    # Enhanced Charts
+    st.markdown("---")
+    st.subheader("📊 Savings Performance Analysis")
+
+    # Savings trend
+    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+    savings_trend = create_enhanced_line_chart(filtered_df, "🏦 Savings Growth Trends")
+    st.plotly_chart(savings_trend, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Savings breakdown
+    col1_sav, col2_sav = st.columns(2)
+    
+    with col1_sav:
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        savings_bar = create_enhanced_bar_chart(filtered_df, 'subtype', "💼 Savings by Type")
+        st.plotly_chart(savings_bar, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with col2_sav:
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        savings_pie = create_enhanced_pie_chart(filtered_df, 'subtype', "🥧 Savings Allocation")
+        st.plotly_chart(savings_pie, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # Savings goals and monthly analysis
+    col3_goals, col4_monthly = st.columns(2)
+    
+    with col3_goals:
+        st.subheader("🎯 Savings Goals Analysis")
+        if not filtered_df.empty and 'subtype' in filtered_df.columns:
+            savings_by_type = filtered_df.groupby('subtype')['amount'].sum().sort_values(ascending=False)
+            
+            # Create a simple progress-like visualization
+            fig_goals = go.Figure()
+            
+            colors_list = [COLORS['saving'], COLORS['income'], COLORS['primary']]
+            
+            for i, (subtype, amount) in enumerate(savings_by_type.items()):
+                fig_goals.add_trace(go.Bar(
+                    y=[subtype],
+                    x=[amount],
+                    orientation='h',
+                    name=subtype.title(),
+                    marker=dict(color=colors_list[i % len(colors_list)]),
+                    text=format_vnd(amount),
+                    textposition='inside'
+                ))
+            
+            fig_goals.update_layout(
+                title="Savings by Goal Type",
+                height=300,
+                showlegend=False,
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)'
+            )
+            
+            st.plotly_chart(fig_goals, use_container_width=True)
+
+    with col4_monthly:
         st.subheader("📅 Monthly Savings Summary")
-        if not filtered_df.empty and 'year_month' in filtered_df.columns and 'amount' in filtered_df.columns:
+        if not filtered_df.empty and 'year_month' in filtered_df.columns:
             monthly_savings = filtered_df.groupby('year_month')['amount'].sum().reset_index()
-            monthly_savings = monthly_savings.sort_values('year_month', ascending=False)
+            monthly_savings = monthly_savings.sort_values('year_month', ascending=False).head(12)
             monthly_savings['amount_formatted'] = monthly_savings['amount'].apply(format_vnd)
-            st.dataframe(monthly_savings[['year_month', 'amount_formatted']], use_container_width=True)
-        else:
-            st.info("No data or missing required columns for monthly savings summary.")
+            monthly_savings['month'] = monthly_savings['year_month'].astype(str)
+            
+            st.dataframe(
+                monthly_savings[['month', 'amount_formatted']],
+                use_container_width=True,
+                height=300,
+                column_config={
+                    "month": "Month",
+                    "amount_formatted": "Savings Amount"
+                }
+            )
 
 def main():
-    """Main application entry point."""
+    """Main application entry point with enhanced styling."""
     # Load data
     df = load_data()
     
-    # Sidebar navigation
-    st.sidebar.title("💰 Expense Dashboard")
-    st.sidebar.markdown("---")
-    
-    page = st.sidebar.selectbox(
-        "Choose a page:",
-        ["🏠 Overview", "📈 Income", "📉 Outcome", "🏦 Savings"]
-    )
+    # Enhanced Sidebar
+    with st.sidebar:
+        st.markdown("### 💰 Financial Dashboard")
+        st.markdown("---")
+        
+        # Navigation with enhanced styling
+        page = st.selectbox(
+            "🧭 Navigate to:",
+            ["🏠 Overview", "📈 Income", "📉 Expenses", "🏦 Savings"],
+            help="Select a dashboard view"
+        )
+        
+        # Data summary in sidebar
+        st.markdown("---")
+        st.markdown("### 📊 Data Insights")
+        
+        if not df.empty:
+            total_transactions = len(df)
+            date_range = f"{df['timestamp'].min().strftime('%Y-%m-%d')} to {df['timestamp'].max().strftime('%Y-%m-%d')}"
+            
+            if 'type' in df.columns:
+                income_count = len(df[df['type'] == 'income'])
+                outcome_count = len(df[df['type'] == 'outcome'])
+                savings_count = len(df[df['type'] == 'saving'])
+                
+                st.metric("📊 Total Records", f"{total_transactions:,}")
+                st.metric("📈 Income Entries", f"{income_count:,}")
+                st.metric("📉 Expense Entries", f"{outcome_count:,}")
+                st.metric("🏦 Savings Entries", f"{savings_count:,}")
+                
+                st.info(f"📅 **Date Range**\n{date_range}")
+                
+                # Quick financial health indicator
+                total_income = df[df['type'] == 'income']['amount'].sum()
+                total_expenses = abs(df[df['type'] == 'outcome']['amount'].sum())
+                financial_health = "🟢 Healthy" if total_income > total_expenses else "🔴 Concerning"
+                st.markdown(f"**Financial Health:** {financial_health}")
+        else:
+            st.warning("📊 No data loaded")
+            
+        st.markdown("---")
+        st.markdown("*💡 Use filters on each page to customize your analysis*")
     
     # Display selected page
     if page == "🏠 Overview":
         overview_page(df)
     elif page == "📈 Income":
         income_page(df)
-    elif page == "📉 Outcome":
+    elif page == "📉 Expenses":
         outcome_page(df)
     elif page == "🏦 Savings":
         savings_page(df)
-    
-    # Sidebar info
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 📊 Data Summary")
-    if not df.empty and 'timestamp' in df.columns and 'type' in df.columns:
-        st.sidebar.write(f"Total Records: {len(df):,}")
-        st.sidebar.write(f"Timestamp Range: {df['timestamp'].min().strftime('%Y-%m-%d')} to {df['timestamp'].max().strftime('%Y-%m-%d')}")
-        st.sidebar.write(f"Categories: {', '.join(df['type'].unique())}")
-    else:
-        st.sidebar.info("No data loaded. Showing sample data summary (if generated).")
-
 
 if __name__ == "__main__":
     main()
