@@ -679,6 +679,12 @@
             "subtype": "Ăn vặt",
             "description": "trà",
             "timestamp": "2025-07-25T07:55:51.765752"
+        },
+        {
+            "amount": 1760264.0,
+            "subtype": "Fe Credit",
+            "description": "nợ",
+            "timestamp": "2025-07-25T10:46:20.751706"
         }
     ],
     "savings": [
@@ -713,7 +719,7 @@
             "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 54017115.0,
+    "current_balance": 52256851.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
