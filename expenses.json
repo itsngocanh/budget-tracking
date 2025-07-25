@@ -697,6 +697,12 @@
             "subtype": "Di chuyển",
             "description": "gửi xe",
             "timestamp": "2025-07-25T18:06:12.168774"
+        },
+        {
+            "amount": 60000.0,
+            "subtype": "Chi phí cố định",
+            "description": "Apple one",
+            "timestamp": "2025-07-25T19:28:52.707282"
         }
     ],
     "savings": [
@@ -731,7 +737,7 @@
             "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 52186851.0,
+    "current_balance": 52126851.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
