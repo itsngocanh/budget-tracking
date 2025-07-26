@@ -172,7 +172,7 @@ def load_data():
         # Drop rows where 'timestamp' or 'amount' is NaN after conversion
         df.dropna(subset=['timestamp', 'amount'], inplace=True)
         
-        # Create year-month column for grouping
+        # Create year_month column for grouping
         if 'timestamp' in df.columns:
             df['year_month'] = df['timestamp'].dt.to_period('M')
         else:
