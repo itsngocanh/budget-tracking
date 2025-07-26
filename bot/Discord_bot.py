@@ -19,7 +19,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('discord_bot.log'),
+        logging.FileHandler('logs/discord_bot.log'),
         logging.StreamHandler()
     ]
 )
@@ -43,7 +43,7 @@ if not TOKEN:
     exit()
 
 GUILD_ID = int(os.getenv('GUILD_ID', 1378927251877531799))
-DATA_FILE = 'expenses.json'
+DATA_FILE = 'data/expenses.json'
 
 # --- Configuration for daily operations ---
 DAILY_MESSAGE_CHANNEL_ID = int(os.getenv('DAILY_MESSAGE_CHANNEL_ID', 1379091155538546769))
@@ -210,7 +210,7 @@ def push_to_github(file_path: str, commit_message: str) -> None:
         logger.error(f"Git operation failed for {file_path}: {e}")
 
 # --- Optimized CSV conversion ---
-def convert_json_to_csv(json_data: Dict[str, Any], csv_filename: str = "03.my_data.csv") -> bool:
+def convert_json_to_csv(json_data: Dict[str, Any], csv_filename: str = "data/03.my_data.csv") -> bool:
     """
     Optimized JSON to CSV conversion with better performance.
     """

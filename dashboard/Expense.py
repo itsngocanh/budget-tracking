@@ -133,7 +133,7 @@ def load_data():
             'Subtype': 'category',
             'Description': 'string'
         }
-        df = pd.read_csv('03.my_data.csv', dtype=dtype_dict, parse_dates=['Timestamp'])
+        df = pd.read_csv('data/03.my_data.csv', dtype=dtype_dict, parse_dates=['Timestamp'])
 
         # Define the required column names as they appear in the CSV (case-sensitive initially)
         required_columns_csv_case = ['Type', 'Amount', 'Subtype', 'Description', 'Timestamp'] 
@@ -183,7 +183,7 @@ def load_data():
 
         return df
     except FileNotFoundError:
-        st.error("Data file '03.my_data.csv' not found. Creating sample data for demonstration.")
+        st.error("Data file 'data/03.my_data.csv' not found. Creating sample data for demonstration.")
         return create_sample_data()
     except Exception as e:
         st.error(f"An error occurred while loading or processing data: {e}. Creating sample data for demonstration.")
