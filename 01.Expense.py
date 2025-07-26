@@ -108,32 +108,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 @st.cache_data
-def optimize_dataframe_memory(df):
-    """Optimize DataFrame memory usage by downcasting numeric types and using category dtype where possible."""
-    for col in df.select_dtypes(include=['int64']).columns:
-        df[col] = pd.to_numeric(df[col], downcast='integer')
-    for col in df.select_dtypes(include=['float64']).columns:
-        df[col] = pd.to_numeric(df[col], downcast='float')
-    for col in df.select_dtypes(include=['object']).columns:
-        # Only convert to category if number of unique values is much less than total
-        if df[col].nunique() < 0.5 * len(df[col]):
-            df[col] = df[col].astype('category')
-    return df
-
 def load_data():
     """
     Load and preprocess the data from '03.my_data.csv'.
     If the file is not found or its structure is unexpected, sample data is created.
     """
     try:
-        # Use dtype hints for better performance
-        dtype_dict = {
-            'Type': 'category',
-            'Amount': 'float64',
-            'Subtype': 'category',
-            'Description': 'string'
-        }
-        df = pd.read_csv('03.my_data.csv', dtype=dtype_dict, parse_dates=['Timestamp'])
+        df = pd.read_csv('03.my_data.csv')
 
         # Define the required column names as they appear in the CSV (case-sensitive initially)
         required_columns_csv_case = ['Type', 'Amount', 'Subtype', 'Description', 'Timestamp'] 
@@ -152,8 +133,6 @@ def load_data():
         # Convert values in the 'type' column to lowercase to match filtering logic
         if 'type' in df.columns:
             df['type'] = df['type'].astype(str).str.lower()
-            if df['type'].dtype != 'category':
-                df['type'] = df['type'].astype('category')
 
         # Ensure 'timestamp' column exists and is converted to datetime
         if 'timestamp' in df.columns:
@@ -172,14 +151,11 @@ def load_data():
         # Drop rows where 'timestamp' or 'amount' is NaN after conversion
         df.dropna(subset=['timestamp', 'amount'], inplace=True)
         
-        # Create year_month column for grouping
+        # Create year-month column for grouping
         if 'timestamp' in df.columns:
             df['year_month'] = df['timestamp'].dt.to_period('M')
         else:
             df['year_month'] = None
-
-        # Optimize memory usage
-        df = optimize_dataframe_memory(df)
 
         return df
     except FileNotFoundError:
