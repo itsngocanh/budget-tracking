@@ -527,12 +527,31 @@ async def export_csv(interaction: discord.Interaction):
     
     try:
         current_data = data_cache.get_data()
+        csv_filename = "03.my_data.csv"
         
-        if convert_json_to_csv(current_data, "03.my_data.csv"):
-            await interaction.edit_original_response(
-                content="✅ **Dữ liệu đã được xuất ra file CSV thành công!**\n"
-                "File đã được đồng bộ với GitHub repository."
-            )
+        if convert_json_to_csv(current_data, csv_filename):
+            try:
+                await interaction.edit_original_response(
+                    content="✅ **Dữ liệu đã được xuất ra file CSV thành công!**\n"
+                    "File đã được đồng bộ với GitHub repository."
+                )
+                # Send the file as a Discord attachment
+                await interaction.followup.send(
+                    content="📊 **Đây là file CSV của bạn:**",
+                    file=discord.File(csv_filename)
+                )
+                
+                # Clean up the local file after sending
+                try:
+                    os.remove(csv_filename)
+                except OSError:
+                    pass  # File cleanup failed, but that's okay
+                    
+            except Exception as e:
+                logger.error(f"Error sending CSV file: {e}")
+                await interaction.edit_original_response(
+                    content="✅ **CSV đã được tạo và đồng bộ với GitHub, nhưng có lỗi khi gửi file qua Discord.**"
+                )
         else:
             await interaction.edit_original_response(content="❌ **Có lỗi xảy ra khi xuất file CSV.**")
             

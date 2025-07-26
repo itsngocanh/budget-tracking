@@ -5,3 +5,11 @@
 2025-07-26 15:39:58,916 - __main__ - INFO - budgetmgmt bot#7833 has connected to Discord!
 2025-07-26 15:39:59,274 - __main__ - INFO - Synced 0 command(s)
 2025-07-26 15:39:59,275 - __main__ - INFO - Bot is ready and all tasks are running!
+2025-07-26 15:41:50,490 - __main__ - INFO - Data loaded successfully. Current balance: 52629851.0
+2025-07-26 15:41:51,225 - __main__ - INFO - Outcome command executed by itsngocanh. Amount: 100000.0
+2025-07-26 15:41:53,516 - __main__ - INFO - Successfully pushed expenses.json to GitHub on branch main
+2025-07-26 15:41:53,518 - __main__ - INFO - Successfully converted expenses.json to 03.my_data.csv
+2025-07-26 15:41:56,085 - __main__ - INFO - Successfully pushed 03.my_data.csv to GitHub on branch main
+2025-07-26 15:51:34,715 - __main__ - INFO - Data loaded successfully. Current balance: 52529851.0
+2025-07-26 15:51:34,717 - __main__ - INFO - Successfully converted expenses.json to 03.my_data.csv
+2025-07-26 15:51:35,056 - __main__ - INFO - Export CSV command executed by itsngocanh
