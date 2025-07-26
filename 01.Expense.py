@@ -10,7 +10,7 @@ warnings.filterwarnings('ignore')
 
 # Page configuration
 st.set_page_config(
-    page_title="Expense Dashboard",
+    page_title="Enhanced Expense Dashboard",
     page_icon="💰",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -210,6 +210,16 @@ def create_sample_data():
         df['year_month'] = df['timestamp'].dt.to_period('M')
     return df
 
+def format_currency(amount):
+    """
+    Formats a numerical amount with M/K indicators for better readability.
+    """
+    if abs(amount) >= 1_000_000:
+        return f"{amount / 1_000_000:,.1f}M"
+    elif abs(amount) >= 1_000:
+        return f"{amount / 1_000:,.0f}K"
+    return f"{amount:,.0f}"
+
 def format_vnd(amount):
     """
     Formats a numerical amount into VND currency string, using 'M' for millions.
@@ -220,62 +230,90 @@ def format_vnd(amount):
         return f"{amount / 1_000:,.1f}K VND"
     return f"{amount:,.0f} VND"
 
-def create_filters(df, key_prefix=""):
+def create_compact_filters(df, key_prefix=""):
     """
-    Creates filter widgets (Type, Date Range, Subtype) in the Streamlit app.
+    Creates compact, easily accessible filter widgets in expandable sections.
     """
-    st.markdown('<div class="filter-container">', unsafe_allow_html=True)
-    st.subheader("🎯 Smart Filters")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        type_options = df['type'].unique() if 'type' in df.columns and not df['type'].empty else []
-        type_filter = st.multiselect(
-            "💼 Transaction Type",
-            options=list(type_options),
-            default=list(type_options),
-            key=f"{key_prefix}_type",
-            help="Select transaction types to analyze"
-        )
-
-    with col2:
-        if 'timestamp' in df.columns and pd.api.types.is_datetime64_any_dtype(df['timestamp']) and not df['timestamp'].empty:
-            min_date = df['timestamp'].min().date() 
-            max_date = df['timestamp'].max().date()
-            date_range = st.date_input(
-                "📅 Date Range",
-                value=(min_date, max_date),
-                min_value=min_date,
-                max_value=max_date,
-                key=f"{key_prefix}_date",
-                help="Select the date range for analysis"
+    with st.expander("🎯 Filters & Date Range", expanded=True):
+        # Quick date range buttons
+        col_quick, col_custom = st.columns([1, 2])
+        
+        with col_quick:
+            st.markdown("**⚡ Quick Filters:**")
+            quick_period = st.selectbox(
+                "Period",
+                ["All Time", "Last 30 Days", "Last 90 Days", "Last 6 Months", "Last Year", "Custom"],
+                key=f"{key_prefix}_quick_period"
             )
+        
+        # Calculate date range based on selection
+        if 'timestamp' in df.columns and not df.empty:
+            max_date = df['timestamp'].max().date()
+            min_date = df['timestamp'].min().date()
+            
+            if quick_period == "Last 30 Days":
+                start_date = max_date - timedelta(days=30)
+                end_date = max_date
+            elif quick_period == "Last 90 Days":
+                start_date = max_date - timedelta(days=90)
+                end_date = max_date
+            elif quick_period == "Last 6 Months":
+                start_date = max_date - timedelta(days=180)
+                end_date = max_date
+            elif quick_period == "Last Year":
+                start_date = max_date - timedelta(days=365)
+                end_date = max_date
+            elif quick_period == "Custom":
+                with col_custom:
+                    st.markdown("**📅 Custom Date Range:**")
+                    date_range = st.date_input(
+                        "Select dates",
+                        value=(min_date, max_date),
+                        min_value=min_date,
+                        max_value=max_date,
+                        key=f"{key_prefix}_custom_date"
+                    )
+                    start_date, end_date = date_range if len(date_range) == 2 else (min_date, max_date)
+            else:  # All Time
+                start_date, end_date = min_date, max_date
         else:
-            st.info("No valid 'Timestamp' column found for date filtering.")
-            date_range = (None, None)
-            
-    with col3:
-        subtype_options = []
-        if 'subtype' in df.columns and 'type' in df.columns and not df.empty:
-            if type_filter:
-                filtered_by_type_df = df[df['type'].isin(type_filter)]
-                if not filtered_by_type_df.empty:
-                    subtype_options = filtered_by_type_df['subtype'].unique()
-            else:
-                subtype_options = df['subtype'].unique()
-            
-        subtype_filter = st.multiselect(
-            "🏷️ Category",
-            options=list(subtype_options),
-            default=list(subtype_options),
-            key=f"{key_prefix}_subtype",
-            help="Filter by specific categories"
-        )
+            start_date, end_date = None, None
 
-    st.markdown('</div>', unsafe_allow_html=True)
+        # Compact filter row
+        col1, col2, col3 = st.columns(3)
 
-    return type_filter, date_range, subtype_filter
+        with col1:
+            type_options = df['type'].unique() if 'type' in df.columns and not df['type'].empty else []
+            type_filter = st.multiselect(
+                "💼 Type",
+                options=list(type_options),
+                default=list(type_options),
+                key=f"{key_prefix}_type"
+            )
+
+        with col2:
+            subtype_options = []
+            if 'subtype' in df.columns and 'type' in df.columns and not df.empty:
+                if type_filter:
+                    filtered_by_type_df = df[df['type'].isin(type_filter)]
+                    if not filtered_by_type_df.empty:
+                        subtype_options = filtered_by_type_df['subtype'].unique()
+                else:
+                    subtype_options = df['subtype'].unique()
+                
+            subtype_filter = st.multiselect(
+                "🏷️ Category",
+                options=list(subtype_options),
+                default=list(subtype_options),
+                key=f"{key_prefix}_subtype"
+            )
+
+        with col3:
+            # Show selected period info
+            if start_date and end_date:
+                st.info(f"📅 {start_date} to {end_date}")
+
+    return type_filter, (start_date, end_date), subtype_filter
 
 def apply_filters(df, type_filter, date_range, subtype_filter):
     """
@@ -347,80 +385,123 @@ def create_metrics(df, overall_df=None):
         create_enhanced_metric_card("🏦 Total Savings", format_vnd(total_savings), 
                                   "metric-container-saving")
 
-def create_enhanced_line_chart(df, title="📈 Daily Trends by Category"):
+def create_flexible_trend_chart(df, title="📈 Financial Trends", key_prefix="trend"):
     """
-    Creates an enhanced line chart with better styling and interactivity.
+    Creates a flexible trend chart with period options (Daily, Weekly, Monthly, Quarterly, Yearly).
+    Mobile-friendly with better number display.
     """
     if df.empty or 'timestamp' not in df.columns or 'type' not in df.columns or 'amount' not in df.columns:
         fig = go.Figure()
         fig.update_layout(
             title=title,
-            annotations=[dict(text="No data available for this chart.", 
-                            showarrow=False, font=dict(size=16, color="gray"))]
+            annotations=[dict(text="No data available", showarrow=False, font=dict(size=16, color="gray"))]
         )
         return fig
 
-    daily_data = df.groupby(['timestamp', 'type'])['amount'].sum().reset_index()
+    # Period selection
+    col_period, col_info = st.columns([1, 2])
+    with col_period:
+        period = st.selectbox(
+            "📊 View by:",
+            ["Daily", "Weekly", "Monthly", "Quarterly", "Yearly"],
+            index=2,  # Default to Monthly
+            key=f"{key_prefix}_period"
+        )
 
+    # Aggregate data based on selected period
+    df_copy = df.copy()
+    
+    if period == "Daily":
+        df_copy['period'] = df_copy['timestamp'].dt.date
+        period_format = '%Y-%m-%d'
+    elif period == "Weekly":
+        df_copy['period'] = df_copy['timestamp'].dt.to_period('W').dt.start_time
+        period_format = '%Y-W%U'
+    elif period == "Monthly":
+        df_copy['period'] = df_copy['timestamp'].dt.to_period('M').dt.start_time
+        period_format = '%Y-%m'
+    elif period == "Quarterly":
+        df_copy['period'] = df_copy['timestamp'].dt.to_period('Q').dt.start_time
+        period_format = '%Y-Q%q'
+    else:  # Yearly
+        df_copy['period'] = df_copy['timestamp'].dt.to_period('Y').dt.start_time
+        period_format = '%Y'
+
+    # Group data by period and type
+    trend_data = df_copy.groupby(['period', 'type'])['amount'].sum().reset_index()
+    
     fig = go.Figure()
 
-    for transaction_type in daily_data['type'].unique():
-        type_data = daily_data[daily_data['type'] == transaction_type]
+    # Add traces for each transaction type
+    for transaction_type in trend_data['type'].unique():
+        type_data = trend_data[trend_data['type'] == transaction_type].sort_values('period')
         
         fig.add_trace(go.Scatter(
-            x=type_data['timestamp'],
+            x=type_data['period'],
             y=type_data['amount'],
-            mode='lines+markers',
+            mode='lines+markers+text',
             name=transaction_type.title(),
             line=dict(
                 color=COLORS.get(transaction_type, COLORS['primary']),
-                width=3,
+                width=4,
                 shape='spline'
             ),
             marker=dict(
-                size=6,
+                size=10,
                 symbol='circle',
                 line=dict(width=2, color='white')
             ),
-            fill='tonexty' if transaction_type != 'income' else 'tozeroy',
-            fillcolor=f"rgba{(*[int(COLORS.get(transaction_type, COLORS['primary'])[i:i+2], 16) for i in (1, 3, 5)], 0.1)}",
+            text=[format_currency(val) for val in type_data['amount']],
+            textposition='top center',
+            textfont=dict(size=12, color=COLORS.get(transaction_type, COLORS['primary'])),
             hovertemplate=f'<b>{transaction_type.title()}</b><br>' +
-                         'Date: %{x}<br>' +
-                         'Amount: %{y:,.0f} VND<br>' +
+                         'Period: %{x}<br>' +
+                         'Amount: %{text}<br>' +
                          '<extra></extra>'
         ))
 
+    # Mobile-friendly layout
     fig.update_layout(
         title=dict(
-            text=title,
-            font=dict(size=20, color=COLORS['dark']),
+            text=f"{title} - {period}",
+            font=dict(size=18, color=COLORS['dark']),
             x=0.5
         ),
         xaxis=dict(
-            title="Date",
+            title=f"{period} Period",
             gridcolor='rgba(128,128,128,0.2)',
             showgrid=True,
-            zeroline=False
+            zeroline=False,
+            tickangle=45 if period in ["Daily", "Weekly"] else 0
         ),
         yaxis=dict(
-            title="Amount (VND)",
+            title="Amount",
             gridcolor='rgba(128,128,128,0.2)',
             showgrid=True,
             zeroline=True,
-            zerolinecolor='rgba(128,128,128,0.5)'
+            zerolinecolor='rgba(128,128,128,0.5)',
+            tickformat='.0f'
         ),
         hovermode='x unified',
         height=450,
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Arial, sans-serif"),
+        font=dict(family="Arial, sans-serif", size=12),
         legend=dict(
             orientation="h",
-            y=-0.1,
+            y=-0.15,
             x=0.5,
-            xanchor='center'
-        )
+            xanchor='center',
+            font=dict(size=14)
+        ),
+        # Mobile responsive
+        margin=dict(l=50, r=50, t=80, b=80)
     )
+
+    with col_info:
+        if not trend_data.empty:
+            total_periods = len(trend_data['period'].unique())
+            st.info(f"📊 Showing {total_periods} {period.lower()} periods")
 
     return fig
 
@@ -488,9 +569,9 @@ def create_enhanced_treemap(df, title="🗺️ Distribution Treemap"):
 
     return fig
 
-def create_enhanced_pie_chart(df, group_by, title="📊 Distribution", show_legend=True):
+def create_top3_pie_chart(df, group_by, title="📊 Distribution", show_legend=True):
     """
-    Creates an enhanced pie chart with better styling.
+    Creates a pie chart showing only top 3 categories and 'Others'.
     """
     if df.empty or group_by not in df.columns or 'amount' not in df.columns:
         fig = go.Figure()
@@ -502,23 +583,37 @@ def create_enhanced_pie_chart(df, group_by, title="📊 Distribution", show_lege
 
     pie_data = df.copy()
     pie_data['amount_abs'] = pie_data['amount'].abs()
-    grouped_data = pie_data.groupby(group_by)['amount_abs'].sum().reset_index()
+    grouped_data = pie_data.groupby(group_by)['amount_abs'].sum().sort_values(ascending=False)
     
-    # Create custom colors
-    colors = px.colors.qualitative.Set3[:len(grouped_data)]
+    # Keep top 3 and group rest as 'Others'
+    if len(grouped_data) > 3:
+        top3 = grouped_data.head(3)
+        others_sum = grouped_data.tail(-3).sum()
+        
+        # Create final data
+        labels = list(top3.index) + ['Others']
+        values = list(top3.values) + [others_sum]
+    else:
+        labels = list(grouped_data.index)
+        values = list(grouped_data.values)
+    
+    # Create custom colors - vibrant for top 3, gray for others
+    colors = [COLORS['income'], COLORS['outcome'], COLORS['saving'], '#CCCCCC'][:len(labels)]
     
     fig = go.Figure(go.Pie(
-        labels=grouped_data[group_by],
-        values=grouped_data['amount_abs'],
-        hole=0.4,
+        labels=labels,
+        values=values,
+        hole=0.5,
         marker=dict(
             colors=colors,
-            line=dict(color='white', width=2)
+            line=dict(color='white', width=3)
         ),
-        textinfo='label+percent',
-        textfont=dict(size=12),
+        textinfo='label+percent+value',
+        textfont=dict(size=12, color='white'),
+        texttemplate='<b>%{label}</b><br>%{percent}<br>%{text}',
+        text=[format_currency(v) for v in values],
         hovertemplate='<b>%{label}</b><br>' +
-                     'Amount: %{value:,.0f} VND<br>' +
+                     'Amount: %{text}<br>' +
                      'Percentage: %{percent}<br>' +
                      '<extra></extra>'
     ))
@@ -526,25 +621,28 @@ def create_enhanced_pie_chart(df, group_by, title="📊 Distribution", show_lege
     fig.update_layout(
         title=dict(
             text=title,
-            font=dict(size=18, color=COLORS['dark']),
+            font=dict(size=16, color=COLORS['dark']),
             x=0.5
         ),
-        height=400,
+        height=350,
         showlegend=show_legend,
         legend=dict(
             orientation="v",
             x=1.05,
-            y=0.5
+            y=0.5,
+            font=dict(size=12)
         ),
         paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(t=50, l=25, r=25, b=25)
+        margin=dict(t=50, l=25, r=25, b=25),
+        # Mobile responsive
+        font=dict(size=11)
     )
 
     return fig
 
-def create_enhanced_bar_chart(df, group_by, title, orientation='v'):
+def create_sorted_bar_chart(df, group_by, title, orientation='v'):
     """
-    Creates an enhanced bar chart with better styling and colors.
+    Creates a bar chart sorted from highest to lowest values.
     """
     if df.empty or group_by not in df.columns or 'type' not in df.columns or 'amount' not in df.columns:
         fig = go.Figure()
@@ -556,51 +654,69 @@ def create_enhanced_bar_chart(df, group_by, title, orientation='v'):
 
     grouped_data = df.copy()
     grouped_data['amount_abs'] = grouped_data['amount'].abs()
-    grouped_data_summed = grouped_data.groupby([group_by, 'type'])['amount_abs'].sum().reset_index()
-
-    # Sort by total amount
+    
+    # Sort by total amount (highest to lowest)
     total_by_group = grouped_data.groupby(group_by)['amount_abs'].sum().sort_values(ascending=False)
     sorted_categories = total_by_group.index.tolist()
+    
+    # Group by category and type, then sort
+    grouped_data_summed = grouped_data.groupby([group_by, 'type'])['amount_abs'].sum().reset_index()
 
     fig = go.Figure()
 
+    # Add traces for each transaction type
     for transaction_type in grouped_data_summed['type'].unique():
         type_data = grouped_data_summed[grouped_data_summed['type'] == transaction_type]
         
-        if orientation == 'h':
-            fig.add_trace(go.Bar(
-                y=type_data[group_by],
-                x=type_data['amount_abs'],
-                name=transaction_type.title(),
-                orientation='h',
-                marker=dict(
-                    color=COLORS.get(transaction_type, COLORS['primary']),
-                    line=dict(color='white', width=1)
-                ),
-                hovertemplate=f'<b>{transaction_type.title()}</b><br>' +
-                             f'{group_by}: %{{y}}<br>' +
-                             'Amount: %{x:,.0f} VND<br>' +
-                             '<extra></extra>'
-            ))
-        else:
-            fig.add_trace(go.Bar(
-                x=type_data[group_by],
-                y=type_data['amount_abs'],
-                name=transaction_type.title(),
-                marker=dict(
-                    color=COLORS.get(transaction_type, COLORS['primary']),
-                    line=dict(color='white', width=1)
-                ),
-                hovertemplate=f'<b>{transaction_type.title()}</b><br>' +
-                             f'{group_by}: %{{x}}<br>' +
-                             'Amount: %{y:,.0f} VND<br>' +
-                             '<extra></extra>'
-            ))
+        # Sort type_data according to sorted_categories
+        type_data_sorted = []
+        for category in sorted_categories:
+            category_data = type_data[type_data[group_by] == category]
+            if not category_data.empty:
+                type_data_sorted.append(category_data.iloc[0])
+        
+        if type_data_sorted:
+            type_data_df = pd.DataFrame(type_data_sorted)
+            
+            if orientation == 'h':
+                fig.add_trace(go.Bar(
+                    y=type_data_df[group_by],
+                    x=type_data_df['amount_abs'],
+                    name=transaction_type.title(),
+                    orientation='h',
+                    marker=dict(
+                        color=COLORS.get(transaction_type, COLORS['primary']),
+                        line=dict(color='white', width=1)
+                    ),
+                    text=[format_currency(val) for val in type_data_df['amount_abs']],
+                    textposition='outside',
+                    hovertemplate=f'<b>{transaction_type.title()}</b><br>' +
+                                 f'{group_by}: %{{y}}<br>' +
+                                 'Amount: %{text}<br>' +
+                                 '<extra></extra>'
+                ))
+            else:
+                fig.add_trace(go.Bar(
+                    x=type_data_df[group_by],
+                    y=type_data_df['amount_abs'],
+                    name=transaction_type.title(),
+                    marker=dict(
+                        color=COLORS.get(transaction_type, COLORS['primary']),
+                        line=dict(color='white', width=1)
+                    ),
+                    text=[format_currency(val) for val in type_data_df['amount_abs']],
+                    textposition='outside',
+                    hovertemplate=f'<b>{transaction_type.title()}</b><br>' +
+                                 f'{group_by}: %{{x}}<br>' +
+                                 'Amount: %{text}<br>' +
+                                 '<extra></extra>'
+                ))
 
+    # Update layout for mobile-friendly display
     fig.update_layout(
         title=dict(
             text=title,
-            font=dict(size=18, color=COLORS['dark']),
+            font=dict(size=16, color=COLORS['dark']),
             x=0.5
         ),
         barmode='stack',
@@ -610,19 +726,25 @@ def create_enhanced_bar_chart(df, group_by, title, orientation='v'):
         xaxis=dict(
             gridcolor='rgba(128,128,128,0.2)',
             showgrid=True,
-            title="Categories" if orientation == 'v' else "Amount (VND)"
+            title="Categories" if orientation == 'v' else "Amount",
+            tickangle=45 if orientation == 'v' else 0,
+            tickfont=dict(size=10)
         ),
         yaxis=dict(
             gridcolor='rgba(128,128,128,0.2)',
             showgrid=True,
-            title="Amount (VND)" if orientation == 'v' else "Categories"
+            title="Amount" if orientation == 'v' else "Categories",
+            tickfont=dict(size=10)
         ),
         legend=dict(
             orientation="h",
-            y=-0.2,
+            y=-0.25 if orientation == 'v' else -0.15,
             x=0.5,
-            xanchor='center'
-        )
+            xanchor='center',
+            font=dict(size=12)
+        ),
+        # Mobile responsive margins
+        margin=dict(l=40, r=40, t=60, b=100 if orientation == 'v' else 80)
     )
 
     return fig
@@ -646,9 +768,9 @@ def create_monthly_table(df):
     # Format values
     for col_type in monthly_pivot.columns:
         if col_type == 'outcome':
-            monthly_pivot[col_type] = monthly_pivot[col_type].abs().apply(format_vnd)
+            monthly_pivot[col_type] = monthly_pivot[col_type].abs().apply(format_currency)
         else:
-            monthly_pivot[col_type] = monthly_pivot[col_type].apply(format_vnd)
+            monthly_pivot[col_type] = monthly_pivot[col_type].apply(format_currency)
 
     return monthly_pivot
 
@@ -687,8 +809,9 @@ def create_enhanced_area_chart(df, title="📈 Cumulative Trends"):
             fillcolor=f"rgba{(*[int(COLORS.get(transaction_type, COLORS['primary'])[i:i+2], 16) for i in (1, 3, 5)], 0.3)}",
             hovertemplate=f'<b>Cumulative {transaction_type.title()}</b><br>' +
                          'Date: %{x}<br>' +
-                         'Amount: %{y:,.0f} VND<br>' +
-                         '<extra></extra>'
+                         'Amount: %{text}<br>' +
+                         '<extra></extra>',
+            text=[format_currency(v) for v in type_data['cumulative']]
         ))
 
     fig.update_layout(
@@ -703,7 +826,7 @@ def create_enhanced_area_chart(df, title="📈 Cumulative Trends"):
             showgrid=True
         ),
         yaxis=dict(
-            title="Cumulative Amount (VND)",
+            title="Cumulative Amount",
             gridcolor='rgba(128,128,128,0.2)',
             showgrid=True
         ),
@@ -736,8 +859,8 @@ def overview_page(df):
         if not df.empty:
             st.info(f"📊 Loaded {len(df):,} transactions | Date range: {df['timestamp'].min().strftime('%Y-%m-%d')} to {df['timestamp'].max().strftime('%Y-%m-%d')}")
 
-    # Enhanced filters
-    type_filter, date_range, subtype_filter = create_filters(df, "overview")
+    # Enhanced compact filters
+    type_filter, date_range, subtype_filter = create_compact_filters(df, "overview")
     filtered_df = apply_filters(df, type_filter, date_range, subtype_filter)
 
     # All-time metrics with enhanced styling
@@ -758,31 +881,31 @@ def overview_page(df):
 
             col1_f, col2_f, col3_f, col4_f = st.columns(4)
             with col1_f:
-                create_enhanced_metric_card("💰 Net Income", format_vnd(net_filtered), "metric-container")
+                create_enhanced_metric_card("💰 Net Income", format_currency(net_filtered), "metric-container")
             with col2_f:
-                create_enhanced_metric_card("📈 Period Income", format_vnd(total_income_filtered), "metric-container-income")
+                create_enhanced_metric_card("📈 Period Income", format_currency(total_income_filtered), "metric-container-income")
             with col3_f:
-                create_enhanced_metric_card("📉 Period Outcome", format_vnd(total_outcome_filtered), "metric-container-outcome")
+                create_enhanced_metric_card("📉 Period Outcome", format_currency(total_outcome_filtered), "metric-container-outcome")
             with col4_f:
-                create_enhanced_metric_card("🏦 Period Savings", format_vnd(total_savings_filtered), "metric-container-saving")
+                create_enhanced_metric_card("🏦 Period Savings", format_currency(total_savings_filtered), "metric-container-saving")
 
     # Enhanced Charts Section
     st.markdown("---")
     st.subheader("📈 Comprehensive Financial Analysis")
 
-    # Main trend analysis
+    # Main trend analysis with flexible periods
     col1_trend, col2_trend = st.columns([2, 1])
     with col1_trend:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        line_chart = create_enhanced_line_chart(filtered_df, "📈 Daily Financial Trends")
-        st.plotly_chart(line_chart, use_container_width=True)
+        trend_chart = create_flexible_trend_chart(filtered_df, "📈 Financial Trends", "overview_trend")
+        st.plotly_chart(trend_chart, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     
     with col2_trend:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        # Overall distribution pie chart
+        # Overall distribution pie chart (top 3 + others)
         if 'type' in filtered_df.columns:
-            pie_chart = create_enhanced_pie_chart(filtered_df, 'type', "💼 Transaction Distribution")
+            pie_chart = create_top3_pie_chart(filtered_df, 'type', "💼 Transaction Types")
             st.plotly_chart(pie_chart, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -807,42 +930,42 @@ def overview_page(df):
             col1_inc, col2_inc = st.columns(2)
             with col1_inc:
                 st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                income_bar = create_enhanced_bar_chart(income_df_ov, 'subtype', "📊 Income by Category")
+                income_bar = create_sorted_bar_chart(income_df_ov, 'subtype', "📊 Income by Category")
                 st.plotly_chart(income_bar, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
             
             with col2_inc:
                 st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                income_treemap = create_enhanced_treemap(income_df_ov, "🗺️ Income Distribution Map")
-                st.plotly_chart(income_treemap, use_container_width=True)
+                income_pie = create_top3_pie_chart(income_df_ov, 'subtype', "🥧 Top Income Sources")
+                st.plotly_chart(income_pie, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
         with tab2:
             col1_out, col2_out = st.columns(2)
             with col1_out:
                 st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                outcome_bar = create_enhanced_bar_chart(outcome_df_ov, 'subtype', "📊 Expenses by Category")
+                outcome_bar = create_sorted_bar_chart(outcome_df_ov, 'subtype', "📊 Expenses by Category")
                 st.plotly_chart(outcome_bar, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
             
             with col2_out:
                 st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                outcome_treemap = create_enhanced_treemap(outcome_df_ov, "🗺️ Expense Distribution Map")
-                st.plotly_chart(outcome_treemap, use_container_width=True)
+                outcome_pie = create_top3_pie_chart(outcome_df_ov, 'subtype', "🥧 Top Expense Categories")
+                st.plotly_chart(outcome_pie, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
         with tab3:
             col1_sav, col2_sav = st.columns(2)
             with col1_sav:
                 st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                saving_bar = create_enhanced_bar_chart(saving_df_ov, 'subtype', "📊 Savings by Category")
+                saving_bar = create_sorted_bar_chart(saving_df_ov, 'subtype', "📊 Savings by Category")
                 st.plotly_chart(saving_bar, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
             
             with col2_sav:
                 st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                saving_treemap = create_enhanced_treemap(saving_df_ov, "🗺️ Savings Distribution Map")
-                st.plotly_chart(saving_treemap, use_container_width=True)
+                saving_pie = create_top3_pie_chart(saving_df_ov, 'subtype', "🥧 Top Savings Types")
+                st.plotly_chart(saving_pie, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
     # Enhanced Monthly Summary
@@ -875,13 +998,15 @@ def overview_page(df):
                 fig_monthly.add_trace(go.Scatter(
                     x=type_data['year_month_str'],
                     y=type_data['amount'],
-                    mode='lines+markers',
+                    mode='lines+markers+text',
                     name=transaction_type.title(),
                     line=dict(
                         color=COLORS.get(transaction_type, COLORS['primary']),
                         width=3
                     ),
-                    marker=dict(size=8)
+                    marker=dict(size=8),
+                    text=[format_currency(val) for val in type_data['amount']],
+                    textposition='top center'
                 ))
             
             fig_monthly.update_layout(
@@ -890,7 +1015,7 @@ def overview_page(df):
                 plot_bgcolor='rgba(0,0,0,0)',
                 paper_bgcolor='rgba(0,0,0,0)',
                 xaxis=dict(title="Month", tickangle=45),
-                yaxis=dict(title="Amount (VND)"),
+                yaxis=dict(title="Amount"),
                 legend=dict(orientation="h", y=-0.2)
             )
             
@@ -913,7 +1038,7 @@ def income_page(df):
         if not income_df.empty:
             st.success(f"💰 Found {len(income_df):,} income transactions")
 
-    type_filter, date_range, subtype_filter = create_filters(income_df, "income")
+    type_filter, date_range, subtype_filter = create_compact_filters(income_df, "income")
     filtered_df = apply_filters(income_df, type_filter, date_range, subtype_filter)
 
     st.markdown("---")
@@ -927,22 +1052,22 @@ def income_page(df):
     filtered_income = filtered_df['amount'].sum() if 'amount' in filtered_df.columns else 0
 
     with col1:
-        create_enhanced_metric_card("💰 Net Worth Impact", format_vnd(overall_income - overall_outcome), "metric-container")
+        create_enhanced_metric_card("💰 Net Worth Impact", format_currency(overall_income - overall_outcome), "metric-container")
     with col2:
-        create_enhanced_metric_card("📈 Total Income", format_vnd(all_time_income), "metric-container-income")
+        create_enhanced_metric_card("📈 Total Income", format_currency(all_time_income), "metric-container-income")
     with col3:
-        create_enhanced_metric_card("🎯 Filtered Income", format_vnd(filtered_income), "metric-container-income")
+        create_enhanced_metric_card("🎯 Filtered Income", format_currency(filtered_income), "metric-container-income")
     with col4:
         avg_income = all_time_income / len(income_df) if len(income_df) > 0 else 0
-        create_enhanced_metric_card("📊 Avg per Transaction", format_vnd(avg_income), "metric-container")
+        create_enhanced_metric_card("📊 Avg per Transaction", format_currency(avg_income), "metric-container")
 
     # Enhanced Charts
     st.markdown("---")
     st.subheader("📊 Income Deep Dive Analysis")
 
-    # Main income trend
+    # Main income trend with flexible periods
     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-    income_trend = create_enhanced_line_chart(filtered_df, "📈 Income Trends Over Time")
+    income_trend = create_flexible_trend_chart(filtered_df, "📈 Income Trends Over Time", "income_trend")
     st.plotly_chart(income_trend, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -951,13 +1076,13 @@ def income_page(df):
     
     with col1_break:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        subtype_chart = create_enhanced_bar_chart(filtered_df, 'subtype', "💼 Income by Source")
+        subtype_chart = create_sorted_bar_chart(filtered_df, 'subtype', "💼 Income by Source")
         st.plotly_chart(subtype_chart, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2_break:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        pie_chart = create_enhanced_pie_chart(filtered_df, 'subtype', "🥧 Income Source Distribution")
+        pie_chart = create_top3_pie_chart(filtered_df, 'subtype', "🥧 Top Income Sources")
         st.plotly_chart(pie_chart, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -966,7 +1091,7 @@ def income_page(df):
     
     with col3_desc:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        desc_chart = create_enhanced_bar_chart(filtered_df, 'description', "📝 Income by Description", 'h')
+        desc_chart = create_sorted_bar_chart(filtered_df, 'description', "📝 Income by Description", 'h')
         st.plotly_chart(desc_chart, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -975,7 +1100,7 @@ def income_page(df):
         if not filtered_df.empty and all(col in filtered_df.columns for col in ['timestamp', 'subtype', 'description', 'amount']):
             income_display = filtered_df[['timestamp', 'subtype', 'description', 'amount']].copy()
             income_display = income_display.sort_values('timestamp', ascending=False).head(10)
-            income_display['amount_formatted'] = income_display['amount'].apply(format_vnd)
+            income_display['amount_formatted'] = income_display['amount'].apply(format_currency)
             income_display['date'] = income_display['timestamp'].dt.strftime('%Y-%m-%d')
             
             st.dataframe(
@@ -1011,7 +1136,7 @@ def outcome_page(df):
         if not outcome_df.empty:
             st.error(f"💸 Found {len(outcome_df):,} expense transactions")
 
-    type_filter, date_range, subtype_filter = create_filters(outcome_df, "outcome")
+    type_filter, date_range, subtype_filter = create_compact_filters(outcome_df, "outcome")
     filtered_df = apply_filters(outcome_df, type_filter, date_range, subtype_filter)
     if 'amount' in filtered_df.columns:
         filtered_df['amount_display'] = filtered_df['amount'].abs()
@@ -1027,22 +1152,22 @@ def outcome_page(df):
     filtered_outcome = filtered_df['amount_display'].sum() if 'amount_display' in filtered_df.columns else 0
 
     with col1:
-        create_enhanced_metric_card("💰 Remaining Balance", format_vnd(overall_income - overall_outcome), "metric-container")
+        create_enhanced_metric_card("💰 Remaining Balance", format_currency(overall_income - overall_outcome), "metric-container")
     with col2:
-        create_enhanced_metric_card("📉 Total Expenses", format_vnd(all_time_outcome), "metric-container-outcome")
+        create_enhanced_metric_card("📉 Total Expenses", format_currency(all_time_outcome), "metric-container-outcome")
     with col3:
-        create_enhanced_metric_card("🎯 Filtered Expenses", format_vnd(filtered_outcome), "metric-container-outcome")
+        create_enhanced_metric_card("🎯 Filtered Expenses", format_currency(filtered_outcome), "metric-container-outcome")
     with col4:
         avg_expense = all_time_outcome / len(outcome_df) if len(outcome_df) > 0 else 0
-        create_enhanced_metric_card("📊 Avg per Transaction", format_vnd(avg_expense), "metric-container")
+        create_enhanced_metric_card("📊 Avg per Transaction", format_currency(avg_expense), "metric-container")
 
     # Enhanced Charts
     st.markdown("---")
     st.subheader("📊 Expense Pattern Analysis")
 
-    # Main expense trend
+    # Main expense trend with flexible periods
     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-    expense_trend = create_enhanced_line_chart(filtered_df, "📉 Expense Trends Over Time")
+    expense_trend = create_flexible_trend_chart(filtered_df, "📉 Expense Trends Over Time", "outcome_trend")
     st.plotly_chart(expense_trend, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1051,13 +1176,13 @@ def outcome_page(df):
     
     with col1_exp:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        category_chart = create_enhanced_bar_chart(filtered_df, 'subtype', "💳 Expenses by Category")
+        category_chart = create_sorted_bar_chart(filtered_df, 'subtype', "💳 Expenses by Category")
         st.plotly_chart(category_chart, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2_exp:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        expense_pie = create_enhanced_pie_chart(filtered_df, 'subtype', "🥧 Expense Distribution")
+        expense_pie = create_top3_pie_chart(filtered_df, 'subtype', "🥧 Top Expense Categories")
         st.plotly_chart(expense_pie, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1069,7 +1194,7 @@ def outcome_page(df):
         if not filtered_df.empty and 'year_month' in filtered_df.columns:
             monthly_expenses = filtered_df.groupby('year_month')['amount_display'].sum().reset_index()
             monthly_expenses = monthly_expenses.sort_values('year_month', ascending=False).head(12)
-            monthly_expenses['amount_formatted'] = monthly_expenses['amount_display'].apply(format_vnd)
+            monthly_expenses['amount_formatted'] = monthly_expenses['amount_display'].apply(format_currency)
             monthly_expenses['month'] = monthly_expenses['year_month'].astype(str)
             
             st.dataframe(
@@ -1090,7 +1215,7 @@ def outcome_page(df):
                 'Category': top_categories.index,
                 'Amount': top_categories.values
             })
-            top_categories_df['Amount_Formatted'] = top_categories_df['Amount'].apply(format_vnd)
+            top_categories_df['Amount_Formatted'] = top_categories_df['Amount'].apply(format_currency)
             
             st.dataframe(
                 top_categories_df[['Category', 'Amount_Formatted']],
@@ -1119,7 +1244,7 @@ def savings_page(df):
         if not savings_df.empty:
             st.info(f"🏦 Found {len(savings_df):,} savings transactions")
 
-    type_filter, date_range, subtype_filter = create_filters(savings_df, "savings")
+    type_filter, date_range, subtype_filter = create_compact_filters(savings_df, "savings")
     filtered_df = apply_filters(savings_df, type_filter, date_range, subtype_filter)
 
     # Enhanced Metrics
@@ -1134,11 +1259,11 @@ def savings_page(df):
     filtered_savings = filtered_df['amount'].sum() if 'amount' in filtered_df.columns else 0
 
     with col1:
-        create_enhanced_metric_card("💰 Net Financial Position", format_vnd(overall_income - overall_outcome), "metric-container")
+        create_enhanced_metric_card("💰 Net Financial Position", format_currency(overall_income - overall_outcome), "metric-container")
     with col2:
-        create_enhanced_metric_card("🏦 Total Savings", format_vnd(all_time_savings), "metric-container-saving")
+        create_enhanced_metric_card("🏦 Total Savings", format_currency(all_time_savings), "metric-container-saving")
     with col3:
-        create_enhanced_metric_card("🎯 Filtered Savings", format_vnd(filtered_savings), "metric-container-saving")
+        create_enhanced_metric_card("🎯 Filtered Savings", format_currency(filtered_savings), "metric-container-saving")
     with col4:
         savings_rate = (all_time_savings / overall_income * 100) if overall_income > 0 else 0
         create_enhanced_metric_card("📊 Savings Rate", f"{savings_rate:.1f}%", "metric-container")
@@ -1147,9 +1272,9 @@ def savings_page(df):
     st.markdown("---")
     st.subheader("📊 Savings Performance Analysis")
 
-    # Savings trend
+    # Savings trend with flexible periods
     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-    savings_trend = create_enhanced_line_chart(filtered_df, "🏦 Savings Growth Trends")
+    savings_trend = create_flexible_trend_chart(filtered_df, "🏦 Savings Growth Trends", "savings_trend")
     st.plotly_chart(savings_trend, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1158,13 +1283,13 @@ def savings_page(df):
     
     with col1_sav:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        savings_bar = create_enhanced_bar_chart(filtered_df, 'subtype', "💼 Savings by Type")
+        savings_bar = create_sorted_bar_chart(filtered_df, 'subtype', "💼 Savings by Type")
         st.plotly_chart(savings_bar, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2_sav:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        savings_pie = create_enhanced_pie_chart(filtered_df, 'subtype', "🥧 Savings Allocation")
+        savings_pie = create_top3_pie_chart(filtered_df, 'subtype', "🥧 Top Savings Types")
         st.plotly_chart(savings_pie, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1188,7 +1313,7 @@ def savings_page(df):
                     orientation='h',
                     name=subtype.title(),
                     marker=dict(color=colors_list[i % len(colors_list)]),
-                    text=format_vnd(amount),
+                    text=format_currency(amount),
                     textposition='inside'
                 ))
             
@@ -1207,7 +1332,7 @@ def savings_page(df):
         if not filtered_df.empty and 'year_month' in filtered_df.columns:
             monthly_savings = filtered_df.groupby('year_month')['amount'].sum().reset_index()
             monthly_savings = monthly_savings.sort_values('year_month', ascending=False).head(12)
-            monthly_savings['amount_formatted'] = monthly_savings['amount'].apply(format_vnd)
+            monthly_savings['amount_formatted'] = monthly_savings['amount'].apply(format_currency)
             monthly_savings['month'] = monthly_savings['year_month'].astype(str)
             
             st.dataframe(
@@ -1227,7 +1352,7 @@ def main():
     
     # Enhanced Sidebar
     with st.sidebar:
-        st.markdown("### 💰 Financial Dashboard")
+        st.markdown("### 💰 Enhanced Financial Dashboard")
         st.markdown("---")
         
         # Navigation with enhanced styling
@@ -1267,6 +1392,18 @@ def main():
             
         st.markdown("---")
         st.markdown("*💡 Use filters on each page to customize your analysis*")
+        
+        # Enhanced Features Section
+        st.markdown("---")
+        st.markdown("### 🚀 Enhanced Features")
+        st.markdown("""
+        - **🎯 Smart Filters**: Quick date range selection
+        - **📊 Flexible Charts**: Multiple period views (Daily/Weekly/Monthly/etc.)
+        - **🥧 Top 3 Focus**: Simplified pie charts showing key categories
+        - **📱 Mobile Friendly**: Responsive design for all devices
+        - **🎨 Modern UI**: Enhanced styling with gradients and effects
+        - **⚡ Performance**: Optimized data loading and processing
+        """)
     
     # Display selected page
     if page == "🏠 Overview":
