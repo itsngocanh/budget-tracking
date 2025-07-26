@@ -190,8 +190,8 @@ def create_sample_data():
             data.append({
                 'timestamp': current_date,
                 'type': 'outcome',
-                'subtype': np.random.choice(['food', 'transport', 'utilities', 'entertainment', 'shopping']),
-                'description': np.random.choice(['Groceries', 'Gas', 'Electric bill', 'Movie', 'Clothes']),
+                'subtype': np.random.choice(['food', 'transport', 'utilities', 'entertainment', 'shopping', 'thảo mộc']),
+                'description': np.random.choice(['Groceries', 'Gas', 'Electric bill', 'Movie', 'Clothes', 'Herbs medicine']),
                 'amount': -np.random.randint(50000, 500000)   # Negative for expenses
             })
         
@@ -346,49 +346,50 @@ def create_enhanced_metric_card(label, value, container_class="metric-container"
         st.metric(label=label, value=value)
     st.markdown('</div>', unsafe_allow_html=True)
 
-def create_metrics(df, overall_df=None):
+def create_collapsible_metrics(df, overall_df=None, title="💎 Financial Summary", expanded=True):
     """
-    Creates and displays enhanced metric cards for current balance, total income, outcome, and savings.
+    Creates collapsible metric cards for current balance, total income, outcome, and savings.
     """
-    if df.empty or 'amount' not in df.columns or 'type' not in df.columns:
-        total_income = 0
-        total_outcome = 0
-        total_savings = 0
-    else:
-        total_income = df[df['type'] == 'income']['amount'].sum()
-        total_outcome = abs(df[df['type'] == 'outcome']['amount'].sum())
-        total_savings = df[df['type'] == 'saving']['amount'].sum()
+    with st.expander(title, expanded=expanded):
+        if df.empty or 'amount' not in df.columns or 'type' not in df.columns:
+            total_income = 0
+            total_outcome = 0
+            total_savings = 0
+        else:
+            total_income = df[df['type'] == 'income']['amount'].sum()
+            total_outcome = abs(df[df['type'] == 'outcome']['amount'].sum())
+            total_savings = df[df['type'] == 'saving']['amount'].sum()
 
-    if overall_df is not None and 'amount' in overall_df.columns and 'type' in overall_df.columns:
-        overall_income = overall_df[overall_df['type'] == 'income']['amount'].sum()
-        overall_outcome = abs(overall_df[overall_df['type'] == 'outcome']['amount'].sum())
-        current_balance = overall_income - overall_outcome
-    else:
-        current_balance = df['amount'].sum()
-        
-    col1, col2, col3, col4 = st.columns(4)
+        if overall_df is not None and 'amount' in overall_df.columns and 'type' in overall_df.columns:
+            overall_income = overall_df[overall_df['type'] == 'income']['amount'].sum()
+            overall_outcome = abs(overall_df[overall_df['type'] == 'outcome']['amount'].sum())
+            current_balance = overall_income - overall_outcome
+        else:
+            current_balance = df['amount'].sum()
+            
+        col1, col2, col3, col4 = st.columns(4)
 
-    with col1:
-        balance_color = "normal" if current_balance >= 0 else "inverse"
-        create_enhanced_metric_card("💰 Current Balance", format_vnd(current_balance), 
-                                  "metric-container", delta_color=balance_color)
+        with col1:
+            balance_color = "normal" if current_balance >= 0 else "inverse"
+            create_enhanced_metric_card("💰 Current Balance", format_vnd(current_balance), 
+                                      "metric-container", delta_color=balance_color)
 
-    with col2:
-        create_enhanced_metric_card("📈 Total Income", format_vnd(total_income), 
-                                  "metric-container-income")
+        with col2:
+            create_enhanced_metric_card("📈 Total Income", format_vnd(total_income), 
+                                      "metric-container-income")
 
-    with col3:
-        create_enhanced_metric_card("📉 Total Outcome", format_vnd(total_outcome), 
-                                  "metric-container-outcome")
+        with col3:
+            create_enhanced_metric_card("📉 Total Outcome", format_vnd(total_outcome), 
+                                      "metric-container-outcome")
 
-    with col4:
-        create_enhanced_metric_card("🏦 Total Savings", format_vnd(total_savings), 
-                                  "metric-container-saving")
+        with col4:
+            create_enhanced_metric_card("🏦 Total Savings", format_vnd(total_savings), 
+                                      "metric-container-saving")
 
 def create_flexible_trend_chart(df, title="📈 Financial Trends", key_prefix="trend"):
     """
     Creates a flexible trend chart with period options (Daily, Weekly, Monthly, Quarterly, Yearly).
-    Mobile-friendly with better number display.
+    Mobile-friendly with better number display and improved Y-axis formatting.
     """
     if df.empty or 'timestamp' not in df.columns or 'type' not in df.columns or 'amount' not in df.columns:
         fig = go.Figure()
@@ -460,7 +461,7 @@ def create_flexible_trend_chart(df, title="📈 Financial Trends", key_prefix="t
                          '<extra></extra>'
         ))
 
-    # Mobile-friendly layout
+    # Mobile-friendly layout with improved Y-axis formatting
     fig.update_layout(
         title=dict(
             text=f"{title} - {period}",
@@ -480,7 +481,10 @@ def create_flexible_trend_chart(df, title="📈 Financial Trends", key_prefix="t
             showgrid=True,
             zeroline=True,
             zerolinecolor='rgba(128,128,128,0.5)',
-            tickformat='.0f'
+            # Custom tick format function to show M/K format
+            tickformat='.0f',
+            tickvals=None,  # Let Plotly choose tick values
+            ticktext=None   # Will be set programmatically
         ),
         hovermode='x unified',
         height=450,
@@ -497,6 +501,32 @@ def create_flexible_trend_chart(df, title="📈 Financial Trends", key_prefix="t
         # Mobile responsive
         margin=dict(l=50, r=50, t=80, b=80)
     )
+
+    # Custom Y-axis formatting for M/K display
+    if not trend_data.empty:
+        max_val = trend_data['amount'].max()
+        min_val = trend_data['amount'].min()
+        
+        # Generate appropriate tick values
+        range_val = max_val - min_val
+        if range_val > 0:
+            if max_val >= 1_000_000:
+                # Generate ticks in millions
+                tick_step = max(1_000_000, int(range_val / 5 / 1_000_000) * 1_000_000)
+                tick_vals = list(range(int(min_val), int(max_val) + tick_step, tick_step))
+                tick_texts = [format_currency(val) for val in tick_vals]
+            elif max_val >= 1_000:
+                # Generate ticks in thousands
+                tick_step = max(1_000, int(range_val / 5 / 1_000) * 1_000)
+                tick_vals = list(range(int(min_val), int(max_val) + tick_step, tick_step))
+                tick_texts = [format_currency(val) for val in tick_vals]
+            else:
+                # Keep original formatting for small numbers
+                tick_vals = None
+                tick_texts = None
+            
+            if tick_vals:
+                fig.update_yaxes(tickvals=tick_vals, ticktext=tick_texts)
 
     with col_info:
         if not trend_data.empty:
@@ -844,6 +874,88 @@ def create_enhanced_area_chart(df, title="📈 Cumulative Trends"):
 
     return fig
 
+def create_thao_moc_analysis(df):
+    """
+    Creates detailed analysis for Thảo Mộc category in outcome data.
+    """
+    if df.empty or 'subtype' not in df.columns:
+        st.info("No data available for Thảo Mộc analysis.")
+        return
+    
+    # Filter for Thảo Mộc data
+    thao_moc_df = df[df['subtype'].str.lower() == 'thảo mộc'].copy()
+    
+    if thao_moc_df.empty:
+        st.info("No Thảo Mộc transactions found in the data.")
+        return
+    
+    st.subheader("🌿 Deep Dive: Thảo Mộc Analysis")
+    
+    # Thảo Mộc metrics
+    with st.expander("🌿 Thảo Mộc Summary Metrics", expanded=True):
+        col1, col2, col3, col4 = st.columns(4)
+        
+        total_thao_moc = thao_moc_df['amount'].abs().sum()
+        avg_thao_moc = thao_moc_df['amount'].abs().mean()
+        transaction_count = len(thao_moc_df)
+        
+        with col1:
+            create_enhanced_metric_card("🌿 Total Thảo Mộc", format_vnd(total_thao_moc), "metric-container-outcome")
+        with col2:
+            create_enhanced_metric_card("📊 Avg Transaction", format_vnd(avg_thao_moc), "metric-container")
+        with col3:
+            create_enhanced_metric_card("🔢 Total Transactions", f"{transaction_count:,}", "metric-container")
+        with col4:
+            # Calculate percentage of total outcomes
+            total_outcomes = df[df['type'] == 'outcome']['amount'].abs().sum() if 'type' in df.columns else total_thao_moc
+            percentage = (total_thao_moc / total_outcomes * 100) if total_outcomes > 0 else 0
+            create_enhanced_metric_card("📈 % of Total Outcomes", f"{percentage:.1f}%", "metric-container-saving")
+    
+    # Thảo Mộc charts
+    col1_tm, col2_tm = st.columns(2)
+    
+    with col1_tm:
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        # Thảo Mộc trend over time
+        tm_trend = create_flexible_trend_chart(thao_moc_df, "🌿 Thảo Mộc Spending Trends", "thao_moc_trend")
+        st.plotly_chart(tm_trend, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with col2_tm:
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        # Thảo Mộc by description if available
+        if 'description' in thao_moc_df.columns:
+            tm_desc_chart = create_sorted_bar_chart(thao_moc_df, 'description', "🏷️ Thảo Mộc by Description", 'h')
+            st.plotly_chart(tm_desc_chart, use_container_width=True)
+        else:
+            st.info("No description data available for detailed breakdown.")
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Recent Thảo Mộc transactions
+    st.subheader("📋 Recent Thảo Mộc Transactions")
+    if 'timestamp' in thao_moc_df.columns:
+        recent_tm = thao_moc_df.sort_values('timestamp', ascending=False).head(10)
+        display_cols = ['timestamp', 'description', 'amount'] if 'description' in recent_tm.columns else ['timestamp', 'amount']
+        
+        if display_cols:
+            recent_display = recent_tm[display_cols].copy()
+            recent_display['amount_formatted'] = recent_display['amount'].abs().apply(format_currency)
+            recent_display['date'] = recent_display['timestamp'].dt.strftime('%Y-%m-%d')
+            
+            display_columns = ['date', 'amount_formatted']
+            column_config = {"date": "Date", "amount_formatted": "Amount"}
+            
+            if 'description' in recent_display.columns:
+                display_columns.insert(1, 'description')
+                column_config["description"] = "Description"
+            
+            st.dataframe(
+                recent_display[display_columns],
+                use_container_width=True,
+                height=300,
+                column_config=column_config
+            )
+
 def overview_page(df):
     """Displays the enhanced Overview Dashboard page."""
     st.markdown('<h1 class="main-header">🏠 Financial Overview Dashboard</h1>', unsafe_allow_html=True)
@@ -863,31 +975,12 @@ def overview_page(df):
     type_filter, date_range, subtype_filter = create_compact_filters(df, "overview")
     filtered_df = apply_filters(df, type_filter, date_range, subtype_filter)
 
-    # All-time metrics with enhanced styling
-    st.markdown("---")
-    st.subheader("💎 Financial Summary - All Time")
-    create_metrics(df, overall_df=df)
+    # All-time metrics with enhanced styling - COLLAPSIBLE
+    create_collapsible_metrics(df, overall_df=df, title="💎 Financial Summary - All Time", expanded=True)
 
     # Current filtered metrics
     if not df.empty and not filtered_df.equals(df):
-        st.markdown("---")
-        st.subheader("🎯 Filtered Period Analysis")
-        
-        if 'type' in filtered_df.columns:
-            total_income_filtered = filtered_df[filtered_df['type'] == 'income']['amount'].sum()
-            total_outcome_filtered = abs(filtered_df[filtered_df['type'] == 'outcome']['amount'].sum())
-            total_savings_filtered = filtered_df[filtered_df['type'] == 'saving']['amount'].sum()
-            net_filtered = total_income_filtered - total_outcome_filtered
-
-            col1_f, col2_f, col3_f, col4_f = st.columns(4)
-            with col1_f:
-                create_enhanced_metric_card("💰 Net Income", format_currency(net_filtered), "metric-container")
-            with col2_f:
-                create_enhanced_metric_card("📈 Period Income", format_currency(total_income_filtered), "metric-container-income")
-            with col3_f:
-                create_enhanced_metric_card("📉 Period Outcome", format_currency(total_outcome_filtered), "metric-container-outcome")
-            with col4_f:
-                create_enhanced_metric_card("🏦 Period Savings", format_currency(total_savings_filtered), "metric-container-saving")
+        create_collapsible_metrics(filtered_df, overall_df=df, title="🎯 Filtered Period Analysis", expanded=False)
 
     # Enhanced Charts Section
     st.markdown("---")
@@ -944,13 +1037,13 @@ def overview_page(df):
             col1_out, col2_out = st.columns(2)
             with col1_out:
                 st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                outcome_bar = create_sorted_bar_chart(outcome_df_ov, 'subtype', "📊 Expenses by Category")
+                outcome_bar = create_sorted_bar_chart(outcome_df_ov, 'subtype', "📊 Outcome by Category")
                 st.plotly_chart(outcome_bar, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
             
             with col2_out:
                 st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                outcome_pie = create_top3_pie_chart(outcome_df_ov, 'subtype', "🥧 Top Expense Categories")
+                outcome_pie = create_top3_pie_chart(outcome_df_ov, 'subtype', "🥧 Top Outcome Categories")
                 st.plotly_chart(outcome_pie, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -968,58 +1061,19 @@ def overview_page(df):
                 st.plotly_chart(saving_pie, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
-    # Enhanced Monthly Summary
+    # Enhanced Monthly Summary (TABLE ONLY - NO DUPLICATE CHART)
     st.markdown("---")
     st.subheader("📅 Monthly Financial Summary")
     
-    col1_table, col2_chart = st.columns([1, 1])
-    
-    with col1_table:
-        monthly_table = create_monthly_table(filtered_df)
-        if not monthly_table.empty:
-            st.dataframe(
-                monthly_table, 
-                use_container_width=True,
-                height=400
-            )
-        else:
-            st.info("📊 No data available for monthly summary with current filters.")
-    
-    with col2_chart:
-        if not filtered_df.empty and 'year_month' in filtered_df.columns:
-            # Monthly trend chart
-            monthly_trend_data = filtered_df.groupby(['year_month', 'type'])['amount'].sum().reset_index()
-            monthly_trend_data['year_month_str'] = monthly_trend_data['year_month'].astype(str)
-            
-            fig_monthly = go.Figure()
-            
-            for transaction_type in monthly_trend_data['type'].unique():
-                type_data = monthly_trend_data[monthly_trend_data['type'] == transaction_type]
-                fig_monthly.add_trace(go.Scatter(
-                    x=type_data['year_month_str'],
-                    y=type_data['amount'],
-                    mode='lines+markers+text',
-                    name=transaction_type.title(),
-                    line=dict(
-                        color=COLORS.get(transaction_type, COLORS['primary']),
-                        width=3
-                    ),
-                    marker=dict(size=8),
-                    text=[format_currency(val) for val in type_data['amount']],
-                    textposition='top center'
-                ))
-            
-            fig_monthly.update_layout(
-                title="📈 Monthly Trends",
-                height=400,
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                xaxis=dict(title="Month", tickangle=45),
-                yaxis=dict(title="Amount"),
-                legend=dict(orientation="h", y=-0.2)
-            )
-            
-            st.plotly_chart(fig_monthly, use_container_width=True)
+    monthly_table = create_monthly_table(filtered_df)
+    if not monthly_table.empty:
+        st.dataframe(
+            monthly_table, 
+            use_container_width=True,
+            height=400
+        )
+    else:
+        st.info("📊 No data available for monthly summary with current filters.")
 
 def income_page(df):
     """Displays the enhanced Income Dashboard page."""
@@ -1041,25 +1095,24 @@ def income_page(df):
     type_filter, date_range, subtype_filter = create_compact_filters(income_df, "income")
     filtered_df = apply_filters(income_df, type_filter, date_range, subtype_filter)
 
-    st.markdown("---")
-    st.subheader("💎 Income Performance Metrics")
-    
-    col1, col2, col3, col4 = st.columns(4)
-
+    # COLLAPSIBLE Income Performance Metrics
     overall_income = df[df['type'] == 'income']['amount'].sum() if 'type' in df.columns else 0
     overall_outcome = abs(df[df['type'] == 'outcome']['amount'].sum()) if 'type' in df.columns else 0
     all_time_income = income_df['amount'].sum() if 'amount' in income_df.columns else 0
     filtered_income = filtered_df['amount'].sum() if 'amount' in filtered_df.columns else 0
 
-    with col1:
-        create_enhanced_metric_card("💰 Net Worth Impact", format_currency(overall_income - overall_outcome), "metric-container")
-    with col2:
-        create_enhanced_metric_card("📈 Total Income", format_currency(all_time_income), "metric-container-income")
-    with col3:
-        create_enhanced_metric_card("🎯 Filtered Income", format_currency(filtered_income), "metric-container-income")
-    with col4:
-        avg_income = all_time_income / len(income_df) if len(income_df) > 0 else 0
-        create_enhanced_metric_card("📊 Avg per Transaction", format_currency(avg_income), "metric-container")
+    with st.expander("💎 Income Performance Metrics", expanded=True):
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            create_enhanced_metric_card("💰 Net Worth Impact", format_currency(overall_income - overall_outcome), "metric-container")
+        with col2:
+            create_enhanced_metric_card("📈 Total Income", format_currency(all_time_income), "metric-container-income")
+        with col3:
+            create_enhanced_metric_card("🎯 Filtered Income", format_currency(filtered_income), "metric-container-income")
+        with col4:
+            avg_income = all_time_income / len(income_df) if len(income_df) > 0 else 0
+            create_enhanced_metric_card("📊 Avg per Transaction", format_currency(avg_income), "metric-container")
 
     # Enhanced Charts
     st.markdown("---")
@@ -1119,7 +1172,7 @@ def income_page(df):
 
 def outcome_page(df):
     """Displays the enhanced Outcome Dashboard page."""
-    st.markdown('<h1 class="main-header">📉 Expense Analysis Dashboard</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">📉 Outcome Analysis Dashboard</h1>', unsafe_allow_html=True)
 
     # Reload button
     col_reload, col_info = st.columns([0.2, 0.8])
@@ -1134,81 +1187,85 @@ def outcome_page(df):
 
     with col_info:
         if not outcome_df.empty:
-            st.error(f"💸 Found {len(outcome_df):,} expense transactions")
+            st.error(f"💸 Found {len(outcome_df):,} outcome transactions")
 
     type_filter, date_range, subtype_filter = create_compact_filters(outcome_df, "outcome")
     filtered_df = apply_filters(outcome_df, type_filter, date_range, subtype_filter)
     if 'amount' in filtered_df.columns:
         filtered_df['amount_display'] = filtered_df['amount'].abs()
 
-    st.markdown("---")
-    st.subheader("💸 Expense Analysis Metrics")
-
-    col1, col2, col3, col4 = st.columns(4)
-
+    # COLLAPSIBLE Outcome Analysis Metrics
     overall_income = df[df['type'] == 'income']['amount'].sum() if 'type' in df.columns else 0
     overall_outcome = abs(df[df['type'] == 'outcome']['amount'].sum()) if 'type' in df.columns else 0
     all_time_outcome = outcome_df['amount_display'].sum() if 'amount_display' in outcome_df.columns else 0
     filtered_outcome = filtered_df['amount_display'].sum() if 'amount_display' in filtered_df.columns else 0
 
-    with col1:
-        create_enhanced_metric_card("💰 Remaining Balance", format_currency(overall_income - overall_outcome), "metric-container")
-    with col2:
-        create_enhanced_metric_card("📉 Total Expenses", format_currency(all_time_outcome), "metric-container-outcome")
-    with col3:
-        create_enhanced_metric_card("🎯 Filtered Expenses", format_currency(filtered_outcome), "metric-container-outcome")
-    with col4:
-        avg_expense = all_time_outcome / len(outcome_df) if len(outcome_df) > 0 else 0
-        create_enhanced_metric_card("📊 Avg per Transaction", format_currency(avg_expense), "metric-container")
+    with st.expander("💸 Outcome Analysis Metrics", expanded=True):
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            create_enhanced_metric_card("💰 Remaining Balance", format_currency(overall_income - overall_outcome), "metric-container")
+        with col2:
+            create_enhanced_metric_card("📉 Total Outcomes", format_currency(all_time_outcome), "metric-container-outcome")
+        with col3:
+            create_enhanced_metric_card("🎯 Filtered Outcomes", format_currency(filtered_outcome), "metric-container-outcome")
+        with col4:
+            avg_outcome = all_time_outcome / len(outcome_df) if len(outcome_df) > 0 else 0
+            create_enhanced_metric_card("📊 Avg per Transaction", format_currency(avg_outcome), "metric-container")
 
     # Enhanced Charts
     st.markdown("---")
-    st.subheader("📊 Expense Pattern Analysis")
+    st.subheader("📊 Outcome Pattern Analysis")
 
-    # Main expense trend with flexible periods
+    # Main outcome trend with flexible periods
     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-    expense_trend = create_flexible_trend_chart(filtered_df, "📉 Expense Trends Over Time", "outcome_trend")
-    st.plotly_chart(expense_trend, use_container_width=True)
+    outcome_trend = create_flexible_trend_chart(filtered_df, "📉 Outcome Trends Over Time", "outcome_trend")
+    st.plotly_chart(outcome_trend, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Expense breakdown
-    col1_exp, col2_exp = st.columns(2)
+    # Outcome breakdown
+    col1_out, col2_out = st.columns(2)
     
-    with col1_exp:
+    with col1_out:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        category_chart = create_sorted_bar_chart(filtered_df, 'subtype', "💳 Expenses by Category")
+        category_chart = create_sorted_bar_chart(filtered_df, 'subtype', "💳 Outcomes by Category")
         st.plotly_chart(category_chart, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with col2_exp:
+    with col2_out:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        expense_pie = create_top3_pie_chart(filtered_df, 'subtype', "🥧 Top Expense Categories")
-        st.plotly_chart(expense_pie, use_container_width=True)
+        outcome_pie = create_top3_pie_chart(filtered_df, 'subtype', "🥧 Top Outcome Categories")
+        st.plotly_chart(outcome_pie, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Monthly expense analysis
+    # ADD THẢO MỘC ANALYSIS SECTION
+    st.markdown("---")
+    create_thao_moc_analysis(filtered_df)
+
+    # Monthly outcome analysis
+    st.markdown("---")
     col3_monthly, col4_top = st.columns(2)
     
     with col3_monthly:
-        st.subheader("📅 Monthly Expense Trends")
+        st.subheader("📅 Monthly Outcome Trends")
         if not filtered_df.empty and 'year_month' in filtered_df.columns:
-            monthly_expenses = filtered_df.groupby('year_month')['amount_display'].sum().reset_index()
-            monthly_expenses = monthly_expenses.sort_values('year_month', ascending=False).head(12)
-            monthly_expenses['amount_formatted'] = monthly_expenses['amount_display'].apply(format_currency)
-            monthly_expenses['month'] = monthly_expenses['year_month'].astype(str)
+            monthly_outcomes = filtered_df.groupby('year_month')['amount_display'].sum().reset_index()
+            monthly_outcomes = monthly_outcomes.sort_values('year_month', ascending=False).head(12)
+            monthly_outcomes['amount_formatted'] = monthly_outcomes['amount_display'].apply(format_currency)
+            monthly_outcomes['month'] = monthly_outcomes['year_month'].astype(str)
             
             st.dataframe(
-                monthly_expenses[['month', 'amount_formatted']],
+                monthly_outcomes[['month', 'amount_formatted']],
                 use_container_width=True,
                 height=350,
                 column_config={
                     "month": "Month",
-                    "amount_formatted": "Total Expenses"
+                    "amount_formatted": "Total Outcomes"
                 }
             )
 
     with col4_top:
-        st.subheader("🔝 Top Expense Categories")
+        st.subheader("🔝 Top Outcome Categories")
         if not filtered_df.empty and 'subtype' in filtered_df.columns:
             top_categories = filtered_df.groupby('subtype')['amount_display'].sum().sort_values(ascending=False).head(10)
             top_categories_df = pd.DataFrame({
@@ -1222,7 +1279,7 @@ def outcome_page(df):
                 use_container_width=True,
                 height=350,
                 column_config={
-                    "Category": "Expense Category",
+                    "Category": "Outcome Category",
                     "Amount_Formatted": "Total Amount"
                 }
             )
@@ -1247,26 +1304,24 @@ def savings_page(df):
     type_filter, date_range, subtype_filter = create_compact_filters(savings_df, "savings")
     filtered_df = apply_filters(savings_df, type_filter, date_range, subtype_filter)
 
-    # Enhanced Metrics
-    st.markdown("---")
-    st.subheader("🏦 Savings Growth Metrics")
-    
-    col1, col2, col3, col4 = st.columns(4)
-
+    # COLLAPSIBLE Savings Growth Metrics
     overall_income = df[df['type'] == 'income']['amount'].sum() if 'type' in df.columns else 0
     overall_outcome = abs(df[df['type'] == 'outcome']['amount'].sum()) if 'type' in df.columns else 0
     all_time_savings = savings_df['amount'].sum() if 'amount' in savings_df.columns else 0
     filtered_savings = filtered_df['amount'].sum() if 'amount' in filtered_df.columns else 0
 
-    with col1:
-        create_enhanced_metric_card("💰 Net Financial Position", format_currency(overall_income - overall_outcome), "metric-container")
-    with col2:
-        create_enhanced_metric_card("🏦 Total Savings", format_currency(all_time_savings), "metric-container-saving")
-    with col3:
-        create_enhanced_metric_card("🎯 Filtered Savings", format_currency(filtered_savings), "metric-container-saving")
-    with col4:
-        savings_rate = (all_time_savings / overall_income * 100) if overall_income > 0 else 0
-        create_enhanced_metric_card("📊 Savings Rate", f"{savings_rate:.1f}%", "metric-container")
+    with st.expander("🏦 Savings Growth Metrics", expanded=True):
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            create_enhanced_metric_card("💰 Net Financial Position", format_currency(overall_income - overall_outcome), "metric-container")
+        with col2:
+            create_enhanced_metric_card("🏦 Total Savings", format_currency(all_time_savings), "metric-container-saving")
+        with col3:
+            create_enhanced_metric_card("🎯 Filtered Savings", format_currency(filtered_savings), "metric-container-saving")
+        with col4:
+            savings_rate = (all_time_savings / overall_income * 100) if overall_income > 0 else 0
+            create_enhanced_metric_card("📊 Savings Rate", f"{savings_rate:.1f}%", "metric-container")
 
     # Enhanced Charts
     st.markdown("---")
@@ -1358,7 +1413,7 @@ def main():
         # Navigation with enhanced styling
         page = st.selectbox(
             "🧭 Navigate to:",
-            ["🏠 Overview", "📈 Income", "📉 Expenses", "🏦 Savings"],
+            ["🏠 Overview", "📈 Income", "📉 Outcome", "🏦 Savings"],
             help="Select a dashboard view"
         )
         
@@ -1377,15 +1432,15 @@ def main():
                 
                 st.metric("📊 Total Records", f"{total_transactions:,}")
                 st.metric("📈 Income Entries", f"{income_count:,}")
-                st.metric("📉 Expense Entries", f"{outcome_count:,}")
+                st.metric("📉 Outcome Entries", f"{outcome_count:,}")
                 st.metric("🏦 Savings Entries", f"{savings_count:,}")
                 
                 st.info(f"📅 **Date Range**\n{date_range}")
                 
                 # Quick financial health indicator
                 total_income = df[df['type'] == 'income']['amount'].sum()
-                total_expenses = abs(df[df['type'] == 'outcome']['amount'].sum())
-                financial_health = "🟢 Healthy" if total_income > total_expenses else "🔴 Concerning"
+                total_outcomes = abs(df[df['type'] == 'outcome']['amount'].sum())
+                financial_health = "🟢 Healthy" if total_income > total_outcomes else "🔴 Concerning"
                 st.markdown(f"**Financial Health:** {financial_health}")
         else:
             st.warning("📊 No data loaded")
@@ -1403,6 +1458,8 @@ def main():
         - **📱 Mobile Friendly**: Responsive design for all devices
         - **🎨 Modern UI**: Enhanced styling with gradients and effects
         - **⚡ Performance**: Optimized data loading and processing
+        - **🌿 Thảo Mộc Analysis**: Special deep-dive for herbal medicine expenses
+        - **📊 Collapsible Metrics**: Expandable metric cards for better space management
         """)
     
     # Display selected page
@@ -1410,7 +1467,7 @@ def main():
         overview_page(df)
     elif page == "📈 Income":
         income_page(df)
-    elif page == "📉 Expenses":
+    elif page == "📉 Outcome":
         outcome_page(df)
     elif page == "🏦 Savings":
         savings_page(df)
