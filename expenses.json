@@ -709,6 +709,12 @@
             "subtype": "Chi phí cố định",
             "description": "Apple one",
             "timestamp": "2025-07-25T19:28:52.707282"
+        },
+        {
+            "amount": 1497000.0,
+            "subtype": "Thảo Mộc",
+            "description": "sữa",
+            "timestamp": "2025-07-26T14:53:33.801284"
         }
     ],
     "savings": [
@@ -743,7 +749,7 @@
             "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 54126851.0,
+    "current_balance": 52629851.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
