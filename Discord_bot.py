@@ -6,6 +6,7 @@ from datetime import datetime, time, timezone
 import csv # Import csv module
 import git # Import the git module
 from dotenv import load_dotenv # type: ignore # For loading environment variables from a .env file
+import time
 
 # Load environment variables from .env file
 load_dotenv()
@@ -43,12 +44,17 @@ LOCAL_REPO_PATH = '.' # Assuming your script is run from the root of your Git re
 GIT_BRANCH = 'main' # Or 'master', depending on your default branch name
 
 # --- Data Management ---
+_expenses_cache = None
+_expenses_cache_time = 0
+_EXPENSES_CACHE_TTL = 10  # seconds
+
 def load_expenses():
     """Loads expense data from a JSON file.
     If the file is not found or empty, it initializes with a default structure.
     Includes robust error handling for JSON decoding issues.
     """
-    print("Attempting to load expenses data...") # Debug print
+    global _expenses_cache, _expenses_cache_time
+    now = time.time()
     default_data = {
         "current_balance": 0.0,
         "income": [],
@@ -59,12 +65,15 @@ def load_expenses():
         "initial_savings_total": 0.0,
         "last_summary_date": None # Added this default key for daily summary
     }
-
+    # Use a simple in-memory cache to avoid repeated disk reads
+    if _expenses_cache is not None and (now - _expenses_cache_time) < _EXPENSES_CACHE_TTL:
+        return _expenses_cache.copy()
+    print("Attempting to load expenses data...") # Debug print
     if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
         print(f"'{DATA_FILE}' not found or is empty. Initializing with default structure.") # Debug print
-        # Return default data directly, no need to save here, save_expenses handles it on first write
-        return default_data 
-    
+        _expenses_cache = default_data.copy()
+        _expenses_cache_time = now
+        return _expenses_cache.copy()
     try:
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -72,14 +81,19 @@ def load_expenses():
             for key, value in default_data.items():
                 data.setdefault(key, value)
             print(f"Expenses data loaded successfully. Current balance: {data['current_balance']}") # Debug print
-            return data
+            _expenses_cache = data.copy()
+            _expenses_cache_time = now
+            return _expenses_cache.copy()
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON from '{DATA_FILE}': {e}. Returning default structure.") # Debug print for JSON error
-        # If file is corrupted, return fresh data to prevent bot crash
-        return default_data
+        _expenses_cache = default_data.copy()
+        _expenses_cache_time = now
+        return _expenses_cache.copy()
     except Exception as e:
         print(f"An unexpected error occurred while loading '{DATA_FILE}': {e}. Returning default structure.") # Debug print for other errors
-        return default_data
+        _expenses_cache = default_data.copy()
+        _expenses_cache_time = now
+        return _expenses_cache.copy()
 
 def save_expenses(data):
     """Saves expense data to a JSON file and triggers Git push for both JSON and converted CSV.
@@ -89,6 +103,10 @@ def save_expenses(data):
     try:
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
+        # Invalidate cache after saving
+        global _expenses_cache, _expenses_cache_time
+        _expenses_cache = data.copy()
+        _expenses_cache_time = time.time()
         print(f"Expenses data saved successfully. New balance: {data['current_balance']:,.0f} VNĐ")
 
         # Try to push the JSON file
