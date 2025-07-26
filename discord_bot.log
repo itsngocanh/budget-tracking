@@ -1,0 +1,7 @@
+2025-07-26 15:39:52,433 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-07-26 15:39:52,436 - __main__ - INFO - Starting Discord bot...
+2025-07-26 15:39:52,438 - discord.client - INFO - logging in using static token
+2025-07-26 15:39:56,911 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: bde43ff94aefe01ae9afb83a05217e5c).
+2025-07-26 15:39:58,916 - __main__ - INFO - budgetmgmt bot#7833 has connected to Discord!
+2025-07-26 15:39:59,274 - __main__ - INFO - Synced 0 command(s)
+2025-07-26 15:39:59,275 - __main__ - INFO - Bot is ready and all tasks are running!
