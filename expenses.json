@@ -763,6 +763,12 @@
             "subtype": "Di chuyển",
             "description": "gửi xe",
             "timestamp": "2025-07-28T18:06:59.640561"
+        },
+        {
+            "amount": 70000.0,
+            "subtype": "Ăn uống",
+            "description": "bữa trưa",
+            "timestamp": "2025-07-29T12:58:33.724410"
         }
     ],
     "savings": [
@@ -797,7 +803,7 @@
             "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 51264307.0,
+    "current_balance": 51194307.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
