@@ -781,6 +781,12 @@
             "subtype": "Di chuyển",
             "description": "xăng",
             "timestamp": "2025-07-29T21:08:13.126039"
+        },
+        {
+            "amount": 45000.0,
+            "subtype": "Ăn vặt",
+            "description": "trà sữa",
+            "timestamp": "2025-07-29T21:08:54.303495"
         }
     ],
     "savings": [
@@ -815,7 +821,7 @@
             "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 51142307.0,
+    "current_balance": 51097307.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
