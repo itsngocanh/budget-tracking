@@ -71,6 +71,12 @@
             "subtype": "Chồng",
             "description": "Thảo Mộc",
             "timestamp": "2025-07-26T14:45:34.689069"
+        },
+        {
+            "amount": 10732486.0,
+            "subtype": "Lương",
+            "description": "Lương",
+            "timestamp": "2025-07-31T17:27:25.105025"
         }
     ],
     "outcome": [
@@ -857,7 +863,7 @@
             "timestamp": "2025-07-02T12:44:28.221045"
         }
     ],
-    "current_balance": 50857307.0,
+    "current_balance": 61589793.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
