@@ -867,9 +867,15 @@
             "subtype": "Quỹ Thảo Mộc",
             "description": "bố cho Thảo Mộc",
             "timestamp": "2025-07-02T12:44:28.221045"
+        },
+        {
+            "amount": 1000000.0,
+            "subtype": "Quỹ Thảo Mộc",
+            "description": "bố cho Thảo Mộc",
+            "timestamp": "2025-07-31T17:47:09.780404"
         }
     ],
-    "current_balance": 71589793.0,
+    "current_balance": 70589793.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
