@@ -847,6 +847,12 @@
             "subtype": "Thảo Mộc",
             "description": "dì Mai",
             "timestamp": "2025-08-01T07:36:26.308649"
+        },
+        {
+            "amount": 50000.0,
+            "subtype": "Ăn uống",
+            "description": "bữa trưa",
+            "timestamp": "2025-08-01T12:49:37.171907"
         }
     ],
     "savings": [
@@ -893,7 +899,7 @@
             "timestamp": "2025-07-31T17:47:56.008999"
         }
     ],
-    "current_balance": 65586793.0,
+    "current_balance": 65536793.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
