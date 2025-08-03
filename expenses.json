@@ -83,6 +83,12 @@
             "subtype": "Chồng",
             "description": "Chi phí hàng tháng",
             "timestamp": "2025-07-31T17:35:45.090676"
+        },
+        {
+            "amount": 500000.0,
+            "subtype": "Thảo Mộc",
+            "description": "ông Hải cho",
+            "timestamp": "2025-08-03T17:18:44.136791"
         }
     ],
     "outcome": [
@@ -935,7 +941,7 @@
             "timestamp": "2025-07-31T17:47:56.008999"
         }
     ],
-    "current_balance": 62564793.0,
+    "current_balance": 63064793.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
