@@ -913,6 +913,12 @@
             "subtype": "Di chuyển",
             "description": "taxi",
             "timestamp": "2025-08-03T20:45:32.914962"
+        },
+        {
+            "amount": 259300.0,
+            "subtype": "Đồ dùng gia đình",
+            "description": "nhà tắm",
+            "timestamp": "2025-08-03T20:46:27.045340"
         }
     ],
     "savings": [
@@ -959,7 +965,7 @@
             "timestamp": "2025-07-31T17:47:56.008999"
         }
     ],
-    "current_balance": 61893793.0,
+    "current_balance": 61634493.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
