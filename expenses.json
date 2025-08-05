@@ -949,6 +949,12 @@
             "subtype": "Di chuyển",
             "description": "gửi xe",
             "timestamp": "2025-08-05T20:30:10.262640"
+        },
+        {
+            "amount": 192100.0,
+            "subtype": "Thảo Mộc",
+            "description": "đồ dùng",
+            "timestamp": "2025-08-05T20:55:35.712813"
         }
     ],
     "savings": [
@@ -995,7 +1001,7 @@
             "timestamp": "2025-07-31T17:47:56.008999"
         }
     ],
-    "current_balance": 60359973.0,
+    "current_balance": 60167873.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
