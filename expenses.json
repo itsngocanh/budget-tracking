@@ -973,6 +973,12 @@
             "subtype": "Ăn uống",
             "description": "bữa trưa",
             "timestamp": "2025-08-06T12:14:38.082988"
+        },
+        {
+            "amount": 170000.0,
+            "subtype": "Ăn vặt",
+            "description": "trà sữa",
+            "timestamp": "2025-08-06T20:18:48.453916"
         }
     ],
     "savings": [
@@ -1019,7 +1025,7 @@
             "timestamp": "2025-07-31T17:47:56.008999"
         }
     ],
-    "current_balance": 59832373.0,
+    "current_balance": 59662373.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
