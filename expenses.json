@@ -1053,9 +1053,15 @@
             "subtype": "Quỹ Thượng Hải",
             "description": "đóng quỹ",
             "timestamp": "2025-07-31T17:47:56.008999"
+        },
+        {
+            "amount": 2000000.0,
+            "subtype": "Monthly Savings",
+            "description": "tiết kiệm hàng tháng",
+            "timestamp": "2025-08-08T14:43:47.037213"
         }
     ],
-    "current_balance": 67149373.0,
+    "current_balance": 65149373.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
