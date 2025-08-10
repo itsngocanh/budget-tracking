@@ -1027,6 +1027,12 @@
             "subtype": "Chăm sóc bản thân",
             "description": "skincare",
             "timestamp": "2025-08-10T08:40:40.601437"
+        },
+        {
+            "amount": 170000.0,
+            "subtype": "Ăn vặt",
+            "description": "bánh trái",
+            "timestamp": "2025-08-10T22:58:59.078118"
         }
     ],
     "savings": [
@@ -1079,7 +1085,7 @@
             "timestamp": "2025-08-08T14:43:47.037213"
         }
     ],
-    "current_balance": 64628173.0,
+    "current_balance": 64458173.0,
     "initial_income_total": 0.0,
     "initial_outcome_total": 0.0,
     "initial_savings_total": 56000000.0,
